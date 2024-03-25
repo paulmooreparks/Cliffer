@@ -40,14 +40,14 @@ public class ClifferBuilder : IClifferBuilder {
             throw new ApplicationException("No entry assembly found");
         }
 
-        var rootCommandTypes = entryAssembly.GetTypes().Where(t => t.GetCustomAttribute<RootCommandAttribute>() != null);
+        var rootCommandTypes = entryAssembly.GetTypes().Where(t => t.GetCustomAttribute<Cliffer.RootCommandAttribute>() != null);
         var rootCommandType = rootCommandTypes.FirstOrDefault();
 
         if (rootCommandType == null) {
             throw new ApplicationException("No root command found");
         }
 
-        var rootCommandAttribute = rootCommandType.GetCustomAttribute<RootCommandAttribute>();
+        var rootCommandAttribute = rootCommandType.GetCustomAttribute<Cliffer.RootCommandAttribute>();
 
         if (rootCommandAttribute is null) {
             throw new ApplicationException("No root command attribute found");
@@ -126,11 +126,11 @@ public class ClifferBuilder : IClifferBuilder {
         var commandTypes = entryAssembly.GetTypes()
             .Where(t => t.GetCustomAttribute<CommandAttribute>() != null);
 
-        var commands = new SortedDictionary<string, Command>();
+        var commands = new SortedDictionary<string, System.CommandLine.Command>();
         var commandRelations = new List<(string Child, string Parent)>();
 
         foreach (var type in commandTypes) {
-            var commandAttribute = type.GetCustomAttribute<CommandAttribute>();
+            var commandAttribute = type.GetCustomAttribute<Cliffer.CommandAttribute>();
 
             if (commandAttribute is not null) {
                 var command = new Command(commandAttribute.Name, commandAttribute.Description);
@@ -322,14 +322,14 @@ public class ClifferBuilder : IClifferBuilder {
 
         return this;
     }
-    public IClifferBuilder BuildCommands(Action<IConfiguration> buildCommands) {
+    public IClifferBuilder BuildCommands(Action<IConfiguration, IServiceProvider> buildCommands) {
         BuildCommands();
-        buildCommands(Context.Configuration);
+        buildCommands(Context.Configuration, ServiceProvider);
         return this;
     }
 
-    public IClifferBuilder ConfigureCommands(Action<IConfiguration> configureCommands) {
-        configureCommands(Context.Configuration);
+    public IClifferBuilder ConfigureCommands(Action<IConfiguration, IServiceProvider> configureCommands) {
+        configureCommands(Context.Configuration, ServiceProvider);
         return this;
     }
 
@@ -411,4 +411,11 @@ public class ClifferBuilder : IClifferBuilder {
         });
     }
 
+    public IClifferBuilder BuildCommands(Action<IConfiguration> buildCommands) {
+        return BuildCommands((configuration, serviceProvider) => buildCommands(configuration));
+    }
+
+    public IClifferBuilder ConfigureCommands(Action<IConfiguration> configureCommands) {
+        return ConfigureCommands((configuration, serviceProvider) => configureCommands(configuration));
+    }
 }

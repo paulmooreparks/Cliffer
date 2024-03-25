@@ -7,8 +7,8 @@ using Microsoft.Extensions.DependencyInjection;
 namespace ClifferDemo;
 
 internal class Program {
-    static void Main(string[] args) {
-        ClifferCli.CreateDefaultBuilder(args)
+    static Task<int> Main(string[] args) {
+        return ClifferCli.CreateDefaultBuilder(args)
             .ConfigureAppConfiguration((context, configurationBuilder) => {
                 // ConfigurationBuilder.AddJsonFile("appsettings.json");
                 Console.WriteLine("ConfigureAppConfiguration");
@@ -17,17 +17,16 @@ internal class Program {
                 // services.AddSingleton<HelloCommand>();
                 Console.WriteLine("ConfigureServices");
             })
-            .BuildCommands(configuration => {
+            .BuildCommands((configuration, serviceProvider) => {
                 // configuration.GetSection("Commands").Bind(context.Commands);
                 Console.WriteLine("BuildCommands");
             })
-            .ConfigureCommands(configuration => {
+            .ConfigureCommands((configuration, serviceProvider) => {
                 // configuration.GetSection("Commands").Bind(context.Commands);
                 Console.WriteLine("ConfigureCommands");
             })
             .Build()
-            .RunAsync(args)
-            .Wait();
+            .RunAsync(args); 
     }
 }
 

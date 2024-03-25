@@ -8,6 +8,8 @@ public interface IClifferBuilder {
     IClifferBuilder ConfigureAppConfiguration(Action<ClifferBuilderContext, IConfigurationBuilder> configureDelegate);
     IClifferBuilder ConfigureServices(Action<IServiceCollection> configureServices);
     IClifferBuilder BuildCommands(Action<IConfiguration> buildCommands);
+    IClifferBuilder BuildCommands(Action<IConfiguration, IServiceProvider> buildCommands);
     IClifferBuilder ConfigureCommands(Action<IConfiguration> configureCommands);
+    IClifferBuilder ConfigureCommands(Action<IConfiguration, IServiceProvider> configureCommands);
     IClifferCli Build();
 }

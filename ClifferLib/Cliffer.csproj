@@ -8,13 +8,21 @@
     <Authors>Paul M. Parks</Authors>
     <Description>A library to simplify the authoring of CLI applications with System.CommandLine.</Description>
     <Copyright>Copyright (c) 2024, Paul M. Parks</Copyright>
-    <Version>0.1.0-prerelease</Version>
+    <Version>0.1.2-prerelease</Version>
     <SignAssembly>True</SignAssembly>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <Title>Cliffer CLI Library</Title>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+    <IncludeSymbols>True</IncludeSymbols>
+    <RepositoryUrl>https://github.com/paulmooreparks/Cliffer</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="..\LICENSE.txt">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
     <None Include="..\README.md">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
