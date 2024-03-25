@@ -14,6 +14,7 @@ public class ClifferBuilder : IClifferBuilder {
     internal readonly IConfigurationBuilder ConfigurationBuilder = new ConfigurationBuilder();
 
     internal IServiceProvider ServiceProvider => Services.BuildServiceProvider();
+    internal RootCommand _rootCommand = new RootCommand();
 
     internal ClifferBuilder() {
         Context.Configuration = ConfigurationBuilder.Build();
@@ -76,32 +77,30 @@ public class ClifferBuilder : IClifferBuilder {
             rootConstructorParamValues[i] = serviceInstance ?? throw new InvalidOperationException($"Service for type {paramType.FullName} not found");
         }
 
-        var rootCommand = new RootCommand();
-
         if (!string.IsNullOrEmpty(rootCommandAttribute.Name)) {
-            rootCommand.Name = rootCommandAttribute.Name;
+            _rootCommand.Name = rootCommandAttribute.Name;
         }
 
-        rootCommand.Description = rootCommandAttribute.Description;
-        rootCommand.IsHidden = rootCommandAttribute.IsHidden;
+        _rootCommand.Description = rootCommandAttribute.Description;
+        _rootCommand.IsHidden = rootCommandAttribute.IsHidden;
 
         {
             var aliases = rootCommandAttribute.Aliases;
 
             if (aliases != null) {
                 foreach (var alias in aliases) {
-                    rootCommand.AddAlias(alias);
+                    _rootCommand.AddAlias(alias);
                 }
             }
         }
 
-        Services.AddSingleton(rootCommand);
+        Services.AddSingleton(_rootCommand);
 
         // Create an instance of the command using the constructor with parameters
         var rootCommandInstance = rootConstructorInfo.Invoke(rootConstructorParamValues);
 
         if (rootCommandInstance is not null) {
-            AttachDynamicHandler(rootCommandType, rootCommand, rootCommandInstance!, rootHandlerMethod);
+            AttachDynamicHandler(rootCommandType, _rootCommand, rootCommandInstance!, rootHandlerMethod);
 
             var configureMethod = rootCommandType.GetMethod("Configure", BindingFlags.Public | BindingFlags.Instance);
 
@@ -245,9 +244,23 @@ public class ClifferBuilder : IClifferBuilder {
                                     }
                                 }
 
+                                System.CommandLine.ArgumentArity arity = attr.Arity switch {
+                                    ArgumentArity.Zero => System.CommandLine.ArgumentArity.Zero,
+                                    ArgumentArity.ZeroOrOne => System.CommandLine.ArgumentArity.ZeroOrOne,
+                                    ArgumentArity.ExactlyOne => System.CommandLine.ArgumentArity.ExactlyOne,
+                                    ArgumentArity.ZeroOrMore => System.CommandLine.ArgumentArity.ZeroOrMore,
+                                    ArgumentArity.OneOrMore => System.CommandLine.ArgumentArity.OneOrMore,
+                                    _ => System.CommandLine.ArgumentArity.ZeroOrOne
+                                };
+
+                                option.Arity = arity;
                                 option.IsHidden = attr.IsHidden;
                                 option.IsRequired = attr.IsRequired;
                                 option.AllowMultipleArgumentsPerToken = attr.AllowMultipleArgumentsPerToken;
+
+                                if (attr.FromAmong.Length > 0) {
+                                    option.FromAmong(attr.FromAmong);
+                                }
 
                                 var defaultValueMethod = type.GetMethod(attr.DefaultValueMethodName, BindingFlags.NonPublic | BindingFlags.Instance);
 
@@ -313,23 +326,23 @@ public class ClifferBuilder : IClifferBuilder {
             }
         }
 
-        // Add top-level commands to rootCommand or another appropriate place
+        // Add top-level commands to _rootCommand or another appropriate place
         foreach (var command in commands.Values) {
             if (!commandRelations.Any(relation => relation.Child == command.Name)) {
-                rootCommand.AddCommand(command);
+                _rootCommand.AddCommand(command);
             }
         }
 
         return this;
     }
-    public IClifferBuilder BuildCommands(Action<IConfiguration, IServiceProvider> buildCommands) {
+    public IClifferBuilder BuildCommands(Action<IConfiguration, RootCommand, IServiceProvider> buildCommands) {
         BuildCommands();
-        buildCommands(Context.Configuration, ServiceProvider);
+        buildCommands(Context.Configuration, _rootCommand, ServiceProvider);
         return this;
     }
 
-    public IClifferBuilder ConfigureCommands(Action<IConfiguration, IServiceProvider> configureCommands) {
-        configureCommands(Context.Configuration, ServiceProvider);
+    public IClifferBuilder ConfigureCommands(Action<IConfiguration, RootCommand, IServiceProvider> configureCommands) {
+        configureCommands(Context.Configuration, _rootCommand, ServiceProvider);
         return this;
     }
 
@@ -411,11 +424,11 @@ public class ClifferBuilder : IClifferBuilder {
         });
     }
 
-    public IClifferBuilder BuildCommands(Action<IConfiguration> buildCommands) {
-        return BuildCommands((configuration, serviceProvider) => buildCommands(configuration));
+    public IClifferBuilder BuildCommands(Action<IConfiguration, RootCommand> buildCommands) {
+        return BuildCommands((configuration, rootCommand, serviceProvider) => buildCommands(configuration, _rootCommand));
     }
 
-    public IClifferBuilder ConfigureCommands(Action<IConfiguration> configureCommands) {
-        return ConfigureCommands((configuration, serviceProvider) => configureCommands(configuration));
+    public IClifferBuilder ConfigureCommands(Action<IConfiguration, RootCommand> configureCommands) {
+        return ConfigureCommands((configuration, rootCommand, serviceProvider) => configureCommands(configuration, _rootCommand));
     }
 }

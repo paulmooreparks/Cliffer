@@ -1,4 +1,5 @@
-﻿using System.CommandLine;
+﻿using System;
+using System.CommandLine;
 
 using Cliffer;
 
@@ -8,25 +9,23 @@ namespace ClifferDemo;
 
 internal class Program {
     static Task<int> Main(string[] args) {
-        return ClifferCli.CreateDefaultBuilder(args)
+        var cli = ClifferCli.CreateDefaultBuilder(args)
             .ConfigureAppConfiguration((context, configurationBuilder) => {
                 // ConfigurationBuilder.AddJsonFile("appsettings.json");
-                Console.WriteLine("ConfigureAppConfiguration");
             })
             .ConfigureServices(services => {
-                // services.AddSingleton<HelloCommand>();
-                Console.WriteLine("ConfigureServices");
+                // services.AddSingleton<MyService>();
             })
-            .BuildCommands((configuration, serviceProvider) => {
+            .BuildCommands((configuration, rootCommand) => {
+                var macro = new Macro("simple", "Macro command", "complex --foo bar --bar foo");
+                rootCommand.AddCommand(macro);
+            })
+            .ConfigureCommands((configuration, rootCommand) => {
                 // configuration.GetSection("Commands").Bind(context.Commands);
-                Console.WriteLine("BuildCommands");
             })
-            .ConfigureCommands((configuration, serviceProvider) => {
-                // configuration.GetSection("Commands").Bind(context.Commands);
-                Console.WriteLine("ConfigureCommands");
-            })
-            .Build()
-            .RunAsync(args); 
+            .Build();
+
+        return cli.RunAsync(args); 
     }
 }
 
@@ -62,4 +61,23 @@ internal class FooCommand {
         return 0;
     }
 }
+
+[Command("complex", "Complex command")]
+[Option(typeof(string), "--foo", "Foo option")]
+[Option(typeof(string), "--bar", "Bar option")]
+internal class ComplexCommand {
+
+    public ComplexCommand(IServiceProvider serviceProvider) {
+    }
+
+    public int Execute(
+        [OptionParam("--foo")] string foo,
+        [OptionParam("--bar")] string bar
+        )
+    {
+        System.Console.WriteLine($"Complex command: --foo = {foo}, --bar = {bar}");
+        return 0;
+    }
+}
+
 

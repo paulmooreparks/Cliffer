@@ -2,7 +2,7 @@
   "profiles": {
     "ClifferDemo": {
       "commandName": "Project",
-      "commandLineArgs": "foo"
+      "commandLineArgs": "simple"
     }
   }
 }
