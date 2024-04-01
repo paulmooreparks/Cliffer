@@ -17,15 +17,15 @@ public class ClifferBuilder : IClifferBuilder {
     internal RootCommand _rootCommand = new RootCommand();
 
     internal ClifferBuilder() {
-        Context.Configuration = ConfigurationBuilder.Build();
-        Services.AddSingleton(Context);
-        Services.AddSingleton(Context.Configuration);
         Services.AddSingleton(this);
         Services.AddSingleton<IServiceProvider>(ServiceProvider);
+        Services.AddSingleton(Context);
     }
 
     public IClifferBuilder ConfigureAppConfiguration(Action<ClifferBuilderContext, IConfigurationBuilder> configureDelegate) {
         configureDelegate(Context, ConfigurationBuilder);
+        Context.Configuration = ConfigurationBuilder.Build();
+        Services.AddSingleton(Context.Configuration);
         return this;
     }
 

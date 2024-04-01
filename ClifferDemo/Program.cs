@@ -3,7 +3,8 @@ using System.CommandLine;
 
 using Cliffer;
 
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.Json;
 
 namespace ClifferDemo;
 
@@ -11,14 +12,20 @@ internal class Program {
     static Task<int> Main(string[] args) {
         var cli = ClifferCli.CreateDefaultBuilder(args)
             .ConfigureAppConfiguration((context, configurationBuilder) => {
-                // ConfigurationBuilder.AddJsonFile("appsettings.json");
+                configurationBuilder.AddJsonFile("appsettings.json");
             })
             .ConfigureServices(services => {
                 // services.AddSingleton<MyService>();
             })
             .BuildCommands((configuration, rootCommand) => {
-                var macro = new Macro("simple", "Macro command", "complex --foo bar --bar foo");
-                rootCommand.AddCommand(macro);
+                var macroSection = configuration.GetSection("Settings").GetSection("Macros");
+                var macros = macroSection.Get<Macro[]>();
+
+                if (macros is not null) {
+                    foreach (var macro in macros) {
+                        rootCommand.AddCommand(macro);
+                    }
+                }
             })
             .ConfigureCommands((configuration, rootCommand) => {
                 // configuration.GetSection("Commands").Bind(context.Commands);

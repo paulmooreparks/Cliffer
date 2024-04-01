@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.CommandLine;
+using System.CommandLine.NamingConventionBinder;
 
 namespace Cliffer;
 
