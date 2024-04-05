@@ -1,5 +1,7 @@
 ﻿using System;
 using System.CommandLine;
+using System.CommandLine.Invocation;
+
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Cliffer;
@@ -21,13 +23,7 @@ public class ClifferCli : IClifferCli {
         if (rootCommand is null) {
             throw new InvalidOperationException("Root command not found.");
         }
-
-        var macros = rootCommand.Children.OfType<Macro>().ToDictionary(macro => macro.Name, macro => macro);
-
-        if (macros is not null) {
-            args = Macro.PreprocessArgs(args, macros);
-        }
-
-        return await rootCommand.InvokeAsync(args);
+        
+        return await rootCommand.RunAsync(args);
     }
 }

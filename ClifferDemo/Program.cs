@@ -1,10 +1,12 @@
 ﻿using System;
 using System.CommandLine;
+using System.CommandLine.Invocation;
 
 using Cliffer;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Json;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ClifferDemo;
 
@@ -15,7 +17,7 @@ internal class Program {
                 configurationBuilder.AddJsonFile("appsettings.json");
             })
             .ConfigureServices(services => {
-                // services.AddSingleton<MyService>();
+                services.AddSingleton<IReplContext, ReplContext>();
             })
             .BuildCommands((configuration, rootCommand) => {
                 var macroSection = configuration.GetSection("Settings").GetSection("Macros");
@@ -28,7 +30,6 @@ internal class Program {
                 }
             })
             .ConfigureCommands((configuration, rootCommand) => {
-                // configuration.GetSection("Commands").Bind(context.Commands);
             })
             .Build();
 
@@ -36,7 +37,44 @@ internal class Program {
     }
 }
 
-[RootCommand("Say hello")]
+internal class ReplContext : IReplContext {
+    public string GetEntryMessage() => "Entering interactive mode...";
+
+    public string GetLoopMessage() => "Do it again!";
+
+    public string[] GetExitCommands() {
+        return new string[] { "exit" };
+    }
+
+    public string[] GetPopCommands() {
+        return new string[] { "pop" };
+    }
+
+    public string[] GetHelpCommands() {
+        return new string[] { "help", "?" };
+    }
+
+    public string GetPrompt(Command command, InvocationContext context) {
+        return $"{command.Name}> ";
+    }
+
+    public string[] PreprocessArgs(string[] args, Command command, InvocationContext context) {
+        return args;
+    }
+}
+
+[RootCommand("Cliffer demo")]
+internal class ReplCommand {
+    public ReplCommand(IServiceProvider serviceProvider) {
+    }
+
+    public async Task<int> Execute(Command command, InvocationContext context, IServiceProvider serviceProvider) {
+        // return await command.Repl(serviceProvider, context, serviceProvider.GetService<IReplContext>());
+        return await command.Repl(serviceProvider, context);
+    }
+}
+
+[Command("hello", "Say hello")]
 internal class HelloCommand {
 
     public HelloCommand(IServiceProvider serviceProvider) {
@@ -56,16 +94,14 @@ internal class HelloCommand {
 internal class FooCommand {
 
     public FooCommand(IServiceProvider serviceProvider) {
-        Console.WriteLine("FooCommand.FooCommand");
     }
 
     public void Configure(Command command) {
-        Console.WriteLine("FooCommand.Configure");
     }
 
-    public int Execute(IServiceProvider serviceProvider) {
-        System.Console.WriteLine("Foo");
-        return 0;
+    public async Task<int> Execute(Command command, InvocationContext context, IServiceProvider serviceProvider) {
+        // return await command.Repl(serviceProvider, context, serviceProvider.GetService<IReplContext>());
+        return await command.Repl(serviceProvider, context);
     }
 }
 
@@ -86,5 +122,3 @@ internal class ComplexCommand {
         return 0;
     }
 }
-
-

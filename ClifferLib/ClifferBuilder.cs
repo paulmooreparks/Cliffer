@@ -363,6 +363,11 @@ public class ClifferBuilder : IClifferBuilder {
                     continue;
                 }
 
+                if (param.ParameterType == typeof(Command)) {
+                    parameterValues[i] = invocationContext.ParseResult.CommandResult.Command;
+                    continue;
+                }
+
                 Symbol? symbol = null;
                 var optionAttribute = param.GetCustomAttribute<OptionParamAttribute>();
                 if (optionAttribute != null) {
