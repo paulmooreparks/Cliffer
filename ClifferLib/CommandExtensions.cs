@@ -13,10 +13,10 @@ public static class CommandExtensions {
     public static async Task<int> RunAsync(this Command command, string[] args) {
         var macros = command.Children.OfType<Macro>().ToDictionary(macro => macro.Name, macro => macro);
 
-        if (macros is not null) {
-            args = Macro.PreprocessArgs(args, macros);
+        if (macros.Any()) {
+            return await Macro.PreprocessMacros(command, args, macros);
         }
-
+        
         return await command.InvokeAsync(args);
     }
 
@@ -25,18 +25,10 @@ public static class CommandExtensions {
             replContext = new DefaultReplContext();
         }
 
-        var entryMessage = replContext.GetEntryMessage();
-
-        if (!string.IsNullOrWhiteSpace(entryMessage)) {
-            Console.WriteLine(entryMessage);
-        }
+        replContext.OnEntry();
 
         while (true) {
-            var loopMessage = replContext.GetLoopMessage();
-            if (!string.IsNullOrWhiteSpace(loopMessage)) {
-                Console.WriteLine(loopMessage);
-            }
-
+            replContext.OnLoop();
             Console.Write($"{replContext.GetPrompt(command, context)}");
 
             string? input = Console.ReadLine();
@@ -52,7 +44,7 @@ public static class CommandExtensions {
             }
 
             if (replContext.GetExitCommands().Contains(input, StringComparer.OrdinalIgnoreCase)) {
-                Environment.Exit(Result.Success);
+                ClifferExitHandler.Exit(Result.Success);
             }
 
             var args = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);

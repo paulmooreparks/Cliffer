@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.CommandLine;
+using System.CommandLine.Help;
 using System.CommandLine.Invocation;
 using System.Linq;
 using System.Text;
@@ -8,15 +9,19 @@ using System.Threading.Tasks;
 
 namespace Cliffer;
 
-internal class DefaultReplContext : IReplContext {
-    public string GetEntryMessage() {
+public class DefaultReplContext : IReplContext {
+    public virtual string GetTitleMessage() => string.Empty;
+
+    public virtual string GetEntryMessage() {
+        var titleMessage = GetTitleMessage();
         var exitCommands = string.Join(", ", GetExitCommands());
         var popCommands = string.Join(", ", GetPopCommands());
         var helpCommands = string.Join(", ", GetHelpCommands());
 
         var maxWidth = Math.Max(exitCommands.Length, Math.Max(popCommands.Length, helpCommands.Length));
 
-        var formattedOutput = $@"Type a command or one of the following:
+        var formattedOutput = $@"{titleMessage}
+Type a command or one of the following:
   {exitCommands.PadRight(maxWidth)}  Exit the application
   {popCommands.PadRight(maxWidth)}  Pop up one level in the command hierarchy
   {helpCommands.PadRight(maxWidth)}  Show help and usage information
@@ -25,15 +30,31 @@ internal class DefaultReplContext : IReplContext {
         return formattedOutput;
     }
 
-    public string GetLoopMessage() => string.Empty;
+    public virtual void OnEntry() {
+        var entryMessage = GetEntryMessage();
 
-    public string[] GetExitCommands() => new string[] { "exit" };
+        if (!string.IsNullOrWhiteSpace(entryMessage)) {
+            Console.WriteLine(entryMessage);
+        }
+    }
 
-    public string[] GetPopCommands() => new string[] { "quit" };
+    public virtual string GetLoopMessage() => string.Empty;
 
-    public string[] GetHelpCommands() => new string[] { "help", "?" };
+    public virtual void OnLoop() {
+        var loopMessage = GetLoopMessage();
 
-    public string GetPrompt(Command command, InvocationContext context) => $"{command.Name}> ";
+        if (!string.IsNullOrWhiteSpace(loopMessage)) {
+            Console.WriteLine(loopMessage);
+        }
+    }
 
-    public string[] PreprocessArgs(string[] args, Command command, InvocationContext context) => args;
+    public virtual string[] GetExitCommands() => new string[] { "exit" };
+
+    public virtual string[] GetPopCommands() => new string[] { "quit" };
+
+    public virtual string[] GetHelpCommands() => new string[] { "help", "?" };
+
+    public virtual string GetPrompt(Command command, InvocationContext context) => $"{command.Name}> ";
+
+    public virtual string[] PreprocessArgs(string[] args, Command command, InvocationContext context) => args;
 }

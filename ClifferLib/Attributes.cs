@@ -98,3 +98,14 @@ public class ArgumentParamAttribute : Attribute {
         Name = name;
     }
 }
+
+[AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
+public class MacroAttribute : Attribute {
+    public string Name { get; }
+    public string Description { get; }
+
+    public MacroAttribute(string name, string description) {
+        Name = name;
+        Description = description;
+    }
+}

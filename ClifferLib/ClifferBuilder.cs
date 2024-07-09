@@ -5,36 +5,78 @@ using System.CommandLine.NamingConventionBinder;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System;
 
 namespace Cliffer;
+
 public class ClifferBuilder : IClifferBuilder {
-    public IServiceCollection Services = new ServiceCollection();
+    internal IConfiguration? _configuration = null;
+    internal IServiceCollection _services = new ServiceCollection();
+    internal IServiceProvider? _serviceProvider;
+    internal ConfigurationBuilder? _configurationBuilder;
 
-    internal readonly ClifferBuilderContext Context = new ClifferBuilderContext();
-    internal readonly IConfigurationBuilder ConfigurationBuilder = new ConfigurationBuilder();
-
-    internal IServiceProvider ServiceProvider => Services.BuildServiceProvider();
     internal RootCommand _rootCommand = new RootCommand();
 
-    internal ClifferBuilder() {
-        Services.AddSingleton(this);
-        Services.AddSingleton<IServiceProvider>(ServiceProvider);
-        Services.AddSingleton(Context);
+    public ClifferBuilder() 
+    {
+        ConfigureDefaultConfiguration();
     }
 
-    public IClifferBuilder ConfigureAppConfiguration(Action<ClifferBuilderContext, IConfigurationBuilder> configureDelegate) {
-        configureDelegate(Context, ConfigurationBuilder);
-        Context.Configuration = ConfigurationBuilder.Build();
-        Services.AddSingleton(Context.Configuration);
+    private void ConfigureDefaultConfiguration() {
+        if (_configurationBuilder is null) {
+            _configurationBuilder = new ConfigurationBuilder();
+        }
+
+        // Get the directory of the currently executing assembly
+        var assemblyLocation = Assembly.GetExecutingAssembly().Location;
+        var assemblyDirectory = Path.GetDirectoryName(assemblyLocation);
+
+        if (assemblyDirectory != null) {
+            var appSettingsPath = Path.Combine(assemblyDirectory, "appSettings.json");
+            _configurationBuilder.AddJsonFile(appSettingsPath, optional: true, reloadOnChange: true);
+        }
+
+        _configuration = _configurationBuilder.Build();
+        _services.AddClifferServices(_configuration);
+        ConfigureAppConfiguration();
+        ConfigureServices();
+    }
+
+    public IClifferBuilder ConfigureAppConfiguration() {
+        if (_configurationBuilder is null) {
+            _configurationBuilder = new ConfigurationBuilder();
+        }
+
+        _configuration = _configurationBuilder.Build();
+        _services.AddSingleton<IConfiguration>(_configuration);
+        return this;
+    }
+
+    public IClifferBuilder ConfigureAppConfiguration(Action<IConfigurationBuilder> configure) {
+        if (_configurationBuilder is null) {
+            _configurationBuilder = new ConfigurationBuilder();
+        }
+
+        configure(_configurationBuilder);
+        return ConfigureAppConfiguration();
+    }
+
+    public IClifferBuilder ConfigureServices() {
         return this;
     }
 
     public IClifferBuilder ConfigureServices(Action<IServiceCollection> configureServices) {
-        configureServices(Services);
+        configureServices(_services);
+        return ConfigureServices();
+    }
+
+    public IClifferBuilder BuildCommands(IServiceProvider serviceProvider, Action<IConfiguration, RootCommand, IServiceProvider> buildCommands) {
+        BuildCommands(serviceProvider);
+        buildCommands(_configuration!, _rootCommand, serviceProvider);
         return this;
     }
 
-    internal IClifferBuilder BuildCommands() {
+    internal IClifferBuilder BuildCommands(IServiceProvider serviceProvider) {
         var entryAssembly = Assembly.GetEntryAssembly();
 
         if (entryAssembly == null) {
@@ -73,7 +115,7 @@ public class ClifferBuilder : IClifferBuilder {
         // Fill the array with instances obtained from the service container
         for (int i = 0; i < rootConstructorParams.Length; i++) {
             var paramType = rootConstructorParams[i].ParameterType;
-            var serviceInstance = ServiceProvider.GetService(paramType);
+            var serviceInstance = serviceProvider.GetService(paramType);
             rootConstructorParamValues[i] = serviceInstance ?? throw new InvalidOperationException($"Service for type {paramType.FullName} not found");
         }
 
@@ -94,7 +136,8 @@ public class ClifferBuilder : IClifferBuilder {
             }
         }
 
-        Services.AddSingleton(_rootCommand);
+        _services.AddSingleton(_rootCommand);
+        _serviceProvider = _services.BuildServiceProvider();
 
         // Create an instance of the command using the constructor with parameters
         var rootCommandInstance = rootConstructorInfo.Invoke(rootConstructorParamValues);
@@ -110,7 +153,7 @@ public class ClifferBuilder : IClifferBuilder {
 
                 for (int i = 0; i < configureParamValues.Length; i++) {
                     var paramType = configureMethodParams[i].ParameterType;
-                    var serviceInstance = ServiceProvider.GetService(paramType);
+                    var serviceInstance = _serviceProvider.GetService(paramType);
                     configureParamValues[i] = serviceInstance ?? throw new InvalidOperationException($"Service for type {paramType.FullName} not found");
                 }
 
@@ -118,10 +161,9 @@ public class ClifferBuilder : IClifferBuilder {
             }
         }
 
-        /* TODO: This can be optimised. if the CLI is not starting in interactive mode and is not displaying the help text, 
+        /* TODO: This can be optimised. If the CLI is not starting in interactive mode and is not displaying the help text, 
         then all of the commands do not need to be processed. That could improve startup time in a non-interactive environment. */
 
-        // Use reflection to find all ICommandConfiguration classes annotated with CommandAttribute
         var commandTypes = entryAssembly.GetTypes()
             .Where(t => t.GetCustomAttribute<CommandAttribute>() != null);
 
@@ -154,11 +196,11 @@ public class ClifferBuilder : IClifferBuilder {
                     var paramType = constructorParams[i].ParameterType;
 
                     if (paramType == typeof(IServiceProvider)) {
-                        rootConstructorParamValues[i] = ServiceProvider;
+                        constructorParamValues[i] = _serviceProvider;
                         continue;
                     }
 
-                    var serviceInstance = ServiceProvider.GetService(paramType);
+                    var serviceInstance = _serviceProvider.GetService(paramType);
                     constructorParamValues[i] = serviceInstance ?? throw new InvalidOperationException($"Service for type {paramType.FullName} not found");
                 }
 
@@ -210,7 +252,7 @@ public class ClifferBuilder : IClifferBuilder {
                                         for (int i = 0; i < handlerParams.Length; i++) {
                                             var param = handlerParams[i];
                                             object? value = null;
-                                            value = ServiceProvider.GetService(param.ParameterType);
+                                            value = _serviceProvider.GetService(param.ParameterType);
 
                                             // Assign the resolved value to the parameterValues array
                                             if (value != null) {
@@ -272,7 +314,7 @@ public class ClifferBuilder : IClifferBuilder {
                                         for (int i = 0; i < handlerParams.Length; i++) {
                                             var param = handlerParams[i];
                                             object? value = null;
-                                            value = ServiceProvider.GetService(param.ParameterType);
+                                            value = _serviceProvider.GetService(param.ParameterType);
 
                                             // Assign the resolved value to the parameterValues array
                                             if (value != null) {
@@ -309,7 +351,7 @@ public class ClifferBuilder : IClifferBuilder {
                                 continue;
                             }
 
-                            var serviceInstance = ServiceProvider.GetService(paramType);
+                            var serviceInstance = _serviceProvider.GetService(paramType);
                             configureParamValues[i] = serviceInstance ?? throw new InvalidOperationException($"Service for type {paramType.FullName} not found");
                         }
 
@@ -335,23 +377,79 @@ public class ClifferBuilder : IClifferBuilder {
 
         return this;
     }
-    public IClifferBuilder BuildCommands(Action<IConfiguration, RootCommand, IServiceProvider> buildCommands) {
-        BuildCommands();
-        buildCommands(Context.Configuration, _rootCommand, ServiceProvider);
-        return this;
-    }
 
     public IClifferBuilder ConfigureCommands(Action<IConfiguration, RootCommand, IServiceProvider> configureCommands) {
-        configureCommands(Context.Configuration, _rootCommand, ServiceProvider);
+        if (_serviceProvider is null) {
+            throw new InvalidOperationException("Service provider not found");
+        }
+
+        if (_configuration is null) {
+            throw new InvalidOperationException("Configuration not found");
+        }
+
+        configureCommands(_configuration, _rootCommand, _serviceProvider);
         return this;
     }
 
-    public IClifferCli Build() {
-        return new ClifferCli(ServiceProvider);
+    public IClifferCli Build(Action<IConfiguration, RootCommand, IServiceProvider>? buildCommands = null) {
+        if (_serviceProvider is null) {
+            _serviceProvider = _services.BuildServiceProvider();
+        }
+
+        BuildCommands(_serviceProvider);
+        _configuration = _serviceProvider.GetService<IConfiguration>()!;
+
+        if (buildCommands is not null) {
+            buildCommands(_configuration, _rootCommand, _serviceProvider);
+        }
+
+        Utility.SetServiceProvider(_serviceProvider);
+
+        var macros = new Dictionary<string, MacroDefinition>();
+        var macroSection = _configuration.GetSection("Cliffer").GetSection("Macros");
+        var baseMacros = macroSection.Get<MacroDefinition[]>();
+
+        if (baseMacros is not null) {
+            foreach (var macro in baseMacros) {
+                macros.Add(macro.Name, macro);
+            }
+        }
+
+        var entryAssembly = Assembly.GetEntryAssembly();
+
+        if (entryAssembly is not null) {
+            var macroProperties = entryAssembly.GetTypes()
+                .SelectMany(type => type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
+                .Where(prop => Attribute.IsDefined(prop, typeof(MacroAttribute)));
+
+            foreach (var property in macroProperties) {
+                var attribute = property.GetCustomAttribute<MacroAttribute>();
+
+                if (attribute is not null) {
+                    var macroScript = property.GetValue(null) as string;
+
+                    if (!string.IsNullOrEmpty(macroScript)) {
+                        var macro = new MacroDefinition() { Name = attribute.Name, Description = attribute.Description, Script = macroScript };
+                        macros.Add(attribute.Name, macro);
+                    }
+                }
+            }
+        }
+
+        foreach (var macro in macros) {
+            var macroCommand = new Macro(macro.Value.Name, $"[macro] {macro.Value.Description}", macro.Value.Script);
+            _rootCommand.AddCommand(macroCommand);
+        }
+
+        return new ClifferCli(_serviceProvider, _services, _rootCommand);
     }
 
     public void AttachDynamicHandler(Type commandType, Command command, Object commandInstance, MethodInfo handlerMethod) {
         command.Handler = CommandHandler.Create(async Task<int> (InvocationContext invocationContext) => {
+            if (_serviceProvider is null) {
+                throw new InvalidOperationException("Service provider not found");
+            }
+
             var commandType = command.GetType();
             var handlerParams = handlerMethod.GetParameters();
             var parameterValues = new object[handlerParams.Length];
@@ -395,7 +493,7 @@ public class ClifferBuilder : IClifferBuilder {
                 }
                 else {
                     // If the child is neither, then get an instance of the type from the service container (dependency injection)
-                    value = ServiceProvider.GetService(param.ParameterType);
+                    value = _serviceProvider.GetService(param.ParameterType);
                 }
 
                 // Assign the resolved value to the parameterValues array
@@ -427,10 +525,6 @@ public class ClifferBuilder : IClifferBuilder {
 
             return 0;
         });
-    }
-
-    public IClifferBuilder BuildCommands(Action<IConfiguration, RootCommand> buildCommands) {
-        return BuildCommands((configuration, rootCommand, serviceProvider) => buildCommands(configuration, _rootCommand));
     }
 
     public IClifferBuilder ConfigureCommands(Action<IConfiguration, RootCommand> configureCommands) {

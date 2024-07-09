@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.6.33815.320
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cliffer", "ClifferLib\Cliffer.csproj", "{4E677229-BA1E-4A97-82A4-F492DDE24F4B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cliffer", "ClifferLib\Cliffer.csproj", "{4E677229-BA1E-4A97-82A4-F492DDE24F4B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClifferDemo", "ClifferDemo\ClifferDemo.csproj", "{9C596BAF-28CC-4E72-BBA9-13B0FE054C82}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ClifferDemo", "ClifferDemo\ClifferDemo.csproj", "{9C596BAF-28CC-4E72-BBA9-13B0FE054C82}"
 	ProjectSection(ProjectDependencies) = postProject
 		{4E677229-BA1E-4A97-82A4-F492DDE24F4B} = {4E677229-BA1E-4A97-82A4-F492DDE24F4B}
 	EndProjectSection
@@ -15,6 +15,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		LICENSE.txt = LICENSE.txt
 		README.md = README.md
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "clicalc", "clicalc\clicalc.csproj", "{F7314D91-C78E-4B9F-93C2-CE0DBC4C7552}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -30,6 +32,10 @@ Global
 		{9C596BAF-28CC-4E72-BBA9-13B0FE054C82}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9C596BAF-28CC-4E72-BBA9-13B0FE054C82}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9C596BAF-28CC-4E72-BBA9-13B0FE054C82}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F7314D91-C78E-4B9F-93C2-CE0DBC4C7552}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F7314D91-C78E-4B9F-93C2-CE0DBC4C7552}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F7314D91-C78E-4B9F-93C2-CE0DBC4C7552}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F7314D91-C78E-4B9F-93C2-CE0DBC4C7552}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
