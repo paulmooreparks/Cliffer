@@ -39,7 +39,7 @@ internal class HelloCommand {
     private static string sunshine => "hello Sunshine";
 
     public int Execute(string addressee) {
-        if (string.IsNullOrEmpty(target)) {
+        if (string.IsNullOrEmpty(addressee)) {
             addressee = "World";
         }
 
