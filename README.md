@@ -38,7 +38,7 @@ internal class HelloCommand {
     [Macro("sunshine", "Greet the morning sun.")]
     private static string sunshine => "hello Sunshine";
 
-    public int Execute(string target, IServiceProvider serviceProvider) {
+    public int Execute(string target) {
         if (string.IsNullOrEmpty(target)) {
             target = "World";
         }
