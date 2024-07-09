@@ -121,10 +121,7 @@ internal class SaveCommand {
 [Argument(typeof(IEnumerable<double>), "values", "Numbers to push onto the stack", Cliffer.ArgumentArity.OneOrMore)]
 internal class PushCommand {
     public int Execute(IEnumerable<double> values, Stack<double> stack) {
-        foreach (var value in values) {
-            stack.Push(value);
-        }
-
+        stack.PushAll(values);
         return Result.Success;
     }
 }
