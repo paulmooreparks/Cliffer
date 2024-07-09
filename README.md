@@ -33,23 +33,23 @@ Here is another example:
 
 ```c#
 [Command("hello", "Say hello")]
-[Argument(typeof(string), "target", "State whom you are greeting.")]
+[Argument(typeof(string), "addressee", "State whom you are greeting.")]
 internal class HelloCommand {
     [Macro("sunshine", "Greet the morning sun.")]
     private static string sunshine => "hello Sunshine";
 
-    public int Execute(string target) {
+    public int Execute(string addressee) {
         if (string.IsNullOrEmpty(target)) {
-            target = "World";
+            addressee = "World";
         }
 
-        Console.WriteLine($"Hello, {target}!");
+        Console.WriteLine($"Hello, {addressee}!");
         return 0;
     }
 }
 ```
 
 In this example, the `HelloCommand` class implements the `hello` command. The `Argument` attribute declares that the command accepts a single argument of type `string`. 
-The `Macro` attribute declares macro that can be used to call `hello` with a pre-defined argument. The `Execute` method will be called when the user invokes the `hello` command.
+The `Macro` attribute declares a macro that can be used to call `hello` with a pre-defined argument. The `Execute` method will be called when the user invokes the `hello` command.
 
-Note that macros can be defined in the configuration file as well as in code.
+Note that macros can be defined in the configuration file as well as in code, and if defined in code, they may be defined on any static string property in any class.
