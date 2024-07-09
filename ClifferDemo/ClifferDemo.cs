@@ -48,17 +48,17 @@ internal class ReplCommand {
 }
 
 [Command("hello", "Say hello")]
+[Argument(typeof(string), "target", "State whom you are greeting.")]
 internal class HelloCommand {
+    [Macro("sunshine", "Greet the morning sun.")]
+    private static string sunshine => "hello Sunshine";
 
-    public HelloCommand(IServiceProvider serviceProvider) {
-    }
+    public int Execute(string target, IServiceProvider serviceProvider) {
+        if (string.IsNullOrEmpty(target)) {
+            target = "World";
+        }
 
-    public void Configure(RootCommand command) {
-        command.Description = "Say hello";
-    }
-
-    public int Execute(IServiceProvider serviceProvider) {
-        System.Console.WriteLine("Hello, World!");
+        Console.WriteLine($"Hello, {target}!");
         return 0;
     }
 }

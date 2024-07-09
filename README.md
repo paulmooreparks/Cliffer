@@ -28,3 +28,28 @@ internal class PushCommand {
 In this example, the `Command` attribute declares that the `PushCommand` class implements the `push` command. The `Argument` attribute declares that the command accepts one 
 or more arguments of type `double` with the name `values`. The `Execute` method will be called when the user invokes the `push` command, and Cliffer will pass the arguments 
 as well as any required services as parameters to the method.
+
+Here is another example:
+
+```c#
+[Command("hello", "Say hello")]
+[Argument(typeof(string), "target", "State whom you are greeting.")]
+internal class HelloCommand {
+    [Macro("sunshine", "Greet the morning sun.")]
+    private static string sunshine => "hello Sunshine";
+
+    public int Execute(string target, IServiceProvider serviceProvider) {
+        if (string.IsNullOrEmpty(target)) {
+            target = "World";
+        }
+
+        Console.WriteLine($"Hello, {target}!");
+        return 0;
+    }
+}
+```
+
+In this example, the `HelloCommand` class implements the `hello` command. The `Argument` attribute declares that the command accepts a single argument of type `string`. 
+The `Macro` attribute declares macro that can be used to call `hello` with a pre-defined argument. The `Execute` method will be called when the user invokes the `hello` command.
+
+Note that macros can be defined in the configuration file as well as in code.
