@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.CommandLine.Parsing;
 
 namespace Cliffer;
 
@@ -47,7 +48,7 @@ public static class CommandExtensions {
                 ClifferExitHandler.Exit(Result.Success);
             }
 
-            var args = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var args = replContext.SplitCommandLine(input);
 
             if (args.Length > 0) {
                 if (replContext.GetHelpCommands().Contains(args[0], StringComparer.OrdinalIgnoreCase)) {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Help;
 using System.CommandLine.Invocation;
+using System.CommandLine.Parsing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -55,6 +56,10 @@ Type a command or one of the following:
     public virtual string[] GetHelpCommands() => new string[] { "help", "?" };
 
     public virtual string GetPrompt(Command command, InvocationContext context) => $"{command.Name}> ";
+
+    public virtual string[] SplitCommandLine(string input) {
+        return CommandLineStringSplitter.Instance.Split(input).ToArray();
+    }
 
     public virtual string[] PreprocessArgs(string[] args, Command command, InvocationContext context) => args;
 }

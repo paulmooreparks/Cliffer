@@ -18,5 +18,6 @@ public interface IReplContext {
     string[] GetExitCommands();
     string[] GetPopCommands();
     string[] GetHelpCommands();
+    string[] SplitCommandLine(string input);
     string[] PreprocessArgs(string[] args, Command command, InvocationContext context);
 }
