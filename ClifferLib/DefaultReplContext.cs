@@ -21,12 +21,25 @@ public class DefaultReplContext : IReplContext {
 
         var maxWidth = Math.Max(exitCommands.Length, Math.Max(popCommands.Length, helpCommands.Length));
 
-        var formattedOutput = $@"{titleMessage}
-Type a command or one of the following:
-  {exitCommands.PadRight(maxWidth)}  Exit the application
-  {popCommands.PadRight(maxWidth)}  Pop up one level in the command hierarchy
-  {helpCommands.PadRight(maxWidth)}  Show help and usage information
-";
+        StringBuilder sb = new StringBuilder();
+        
+        if (!string.IsNullOrEmpty(titleMessage)) {
+            sb.AppendLine(titleMessage);
+        }
+
+        if (exitCommands is not null && exitCommands.Any()) {
+            sb.AppendLine($@"{exitCommands.PadRight(maxWidth)}  Exit the application");
+        }
+
+        if (popCommands is not null && popCommands.Any()) {
+            sb.AppendLine($@"{popCommands.PadRight(maxWidth)}  Pop up one level in the command hierarchy");
+        }
+
+        if (helpCommands is not null && helpCommands.Any()) {
+            sb.AppendLine($@"{helpCommands.PadRight(maxWidth)}  Show help and usage information");
+        }
+
+        var formattedOutput = sb.ToString();
 
         return formattedOutput;
     }
