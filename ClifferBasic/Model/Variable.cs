@@ -14,36 +14,32 @@ internal class Variable {
     }
 }
 
-internal class IntegerVariable : Variable {
-    internal int Value { get; set; }
+internal class NumericVariable : Variable {
+    internal object Value { get; set; }
 
-    internal IntegerVariable(int value) : base(typeof(int)) {
+    public NumericVariable(Type type, object value) : base(type) {
         Value = value;
     }
 
-    internal IntegerVariable(object value) : base(typeof(int)) {
-        Value = Convert.ToInt32(value);
-    }
+    internal bool ToBool() => Convert.ToBoolean(Value);
 
-    public override string? ToString() {
-        return Value.ToString();
-    }
+    internal int ToInt() => Convert.ToInt32(Value);
+
+    internal double ToDouble() => Convert.ToDouble(Value);
+
+    public override string? ToString() => Value.ToString();
 }
 
-internal class DoubleVariable : Variable {
-    internal double Value { get; set; }
+internal class BooleanVariable : NumericVariable {
+    internal BooleanVariable(object value) : base(typeof(bool), value) { }
+}
 
-    internal DoubleVariable(double value) : base(typeof(double)) {
-        Value = value;
-    }
+internal class IntegerVariable : NumericVariable {
+    internal IntegerVariable(object value) : base(typeof(int), value) { }
+}
 
-    internal DoubleVariable(object value) : base(typeof(double)) {
-        Value = Convert.ToDouble(value);
-    }
-
-    public override string? ToString() {
-        return Value.ToString();
-    }
+internal class DoubleVariable : NumericVariable {
+    internal DoubleVariable(object value) : base(typeof(double), value) { }
 }
 
 internal class StringVariable : Variable {
@@ -57,8 +53,6 @@ internal class StringVariable : Variable {
         Value = value?.ToString() ?? string.Empty;
     }
 
-    public override string? ToString() {
-        return Value;
-    }
+    public override string? ToString() => Value;
 }
 

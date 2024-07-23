@@ -27,7 +27,10 @@ internal abstract class LiteralExpression<T> : Expression  {
     public override string ToString() {
         return $"{Value?.ToString()}";
     }
+}
 
+internal class BooleanExpression : LiteralExpression<bool> {
+    internal BooleanExpression(bool value) : base(value) { }
 }
 
 internal class NumberExpression : LiteralExpression<object> {
@@ -201,8 +204,10 @@ internal class BinaryExpression : Expression {
     internal override object Evaluate(VariableStore variableStore) {
         Expression result =  Left switch {
             BinaryExpression lvalue => new BinaryExpression(new NumberExpression(lvalue.Evaluate(variableStore)), Operator, Right),
+            GroupExpression lvalue => new BinaryExpression(new NumberExpression(lvalue.Evaluate(variableStore)), Operator, Right),
             NumberExpression lvalue => Right switch {
                 BinaryExpression rvalue => new BinaryExpression(lvalue, Operator, new NumberExpression(rvalue.Evaluate(variableStore))),
+                GroupExpression rvalue => new BinaryExpression(lvalue, Operator, new NumberExpression(rvalue.Evaluate(variableStore))),
                 NumberExpression rvalue => Operator.Type switch {
                     TokenType.Plus => new NumberExpression(lvalue.ToDouble() + rvalue.ToDouble()),
                     TokenType.Minus => new NumberExpression(lvalue.ToDouble() - rvalue.ToDouble()),
@@ -243,6 +248,7 @@ internal class BinaryExpression : Expression {
             },
             IntegerVariableExpression lvalue => Right switch {
                 BinaryExpression rvalue => new BinaryExpression(lvalue, Operator, new NumberExpression(rvalue.Evaluate(variableStore))),
+                GroupExpression rvalue => new BinaryExpression(lvalue, Operator, new NumberExpression(rvalue.Evaluate(variableStore))),
                 NumberExpression rvalue => Operator.Type switch {
                     TokenType.Plus => new NumberExpression(lvalue.ToInt(variableStore) + rvalue.ToInt()),
                     TokenType.Minus => new NumberExpression(lvalue.ToInt(variableStore) - rvalue.ToInt()),
@@ -283,6 +289,7 @@ internal class BinaryExpression : Expression {
             },
             DoubleVariableExpression lvalue => Right switch {
                 BinaryExpression rvalue => new BinaryExpression(lvalue, Operator, new NumberExpression(rvalue.Evaluate(variableStore))),
+                GroupExpression rvalue => new BinaryExpression(lvalue, Operator, new NumberExpression(rvalue.Evaluate(variableStore))),
                 NumberExpression rvalue => Operator.Type switch {
                     TokenType.Plus => new NumberExpression(lvalue.ToDouble(variableStore) + rvalue.ToDouble()),
                     TokenType.Minus => new NumberExpression(lvalue.ToDouble(variableStore) - rvalue.ToDouble()),

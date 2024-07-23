@@ -10,7 +10,6 @@ internal class ExpressionParser {
     public ExpressionParser() { }
 
     private bool Check(TokenType type) {
-        if (IsAtEnd) { return false; }
         return Peek?.Type == type;
     }
 
