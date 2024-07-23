@@ -21,12 +21,8 @@ internal class ClifferBasic {
                 services.AddSingleton<Tokenizer>();
                 services.AddSingleton<ExpressionParser>();
                 services.AddSingleton<ExpressionBuilder>();
-                services.AddSingleton<PersistenceService>();
+                services.AddSingleton<ProgramService>();
                 services.AddSingleton<CommandSplitter>();
-                services.AddSingleton<Dictionary<int, string[]>>(provider => { 
-                    var persistenceService = provider.GetService<PersistenceService>()!;
-                    return persistenceService.Load();
-                });
             })
             .Build();
 

@@ -7,16 +7,19 @@ using System.Threading.Tasks;
 
 using Cliffer;
 
+using ClifferBasic.Services;
+
 namespace ClifferBasic.Commands;
 
 [Command("list", "List the current program in memory")]
 internal class ListCommand {
-    public int Execute(Dictionary<int, string[]> program) {
-        var lineNumbers = program.Keys.OrderBy(x => x).ToList();
+    public int Execute(ProgramService programService) {
+        if (programService == null) {
+            return Result.Error;
+        }
 
-        foreach (var lineNumber in lineNumbers) {
-            string line = string.Join(" ", program[lineNumber]);
-            Console.WriteLine($"{lineNumber} {line}");
+        foreach (var line in programService.Program.Listing) {
+            Console.WriteLine(line);
         }
 
         return Result.Success;

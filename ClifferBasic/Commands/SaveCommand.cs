@@ -10,11 +10,10 @@ using ClifferBasic.Services;
 namespace ClifferBasic.Commands;
 
 [Command("save", "Save a program to persistent storage")]
-[Argument(typeof(string), "filename", "The name of the file to write to disk")]
+[Argument(typeof(string), "filename", "The name of the file to write to disk", arity: ArgumentArity.ExactlyOne)]
 internal class SaveCommand {
-    public int Execute(Dictionary<int, string[]> program, PersistenceService persistenceService) {
-        Console.Error.WriteLine("Not implemented yet");
-        persistenceService.Save(program);
+    public int Execute(string filename, ProgramService programService) {
+        programService.Save(filename);
         return Result.Success;
     }
 }

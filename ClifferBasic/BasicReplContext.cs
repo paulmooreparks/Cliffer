@@ -27,22 +27,10 @@ internal class BasicReplContext : Cliffer.DefaultReplContext {
         return _splitter.Split(input).ToArray();
     }
 
-    public override string[] PreprocessArgs(string[] args, Command command, InvocationContext context) {
-        args = base.PreprocessArgs(args, command, context);
-        return args;
-    }
-
     public override Task<int> RunAsync(Command command, string[] args) {
         if (args.Length > 1 && int.TryParse(args[0], out int lineNumber)) {
-            var program = Utility.GetService<Dictionary<int, string[]>>()!;
-
-            if (program.ContainsKey(lineNumber)) {
-                program[lineNumber] = args.Skip(1).ToArray();
-            }
-            else {
-                program.Add(lineNumber, args.Skip(1).ToArray());
-            }
-
+            var programService = Utility.GetService<ProgramService>()!;
+            programService.Program.SetLine(lineNumber, args.Skip(1).ToArray());
             return Task.FromResult(Result.Success);
         }
 

@@ -10,11 +10,10 @@ using ClifferBasic.Services;
 namespace ClifferBasic.Commands;
 
 [Command("load", "Load a program from persistent storage")]
-[Argument(typeof(string), "filename", "The name of the file to load into memory")]
+[Argument(typeof(string), "filename", "The name of the file to load into memory", arity: ArgumentArity.ExactlyOne)]
 internal class LoadCommand {
-    public int Execute(string filename, Dictionary<int, string[]> program, PersistenceService persistenceService) {
-        Console.Error.WriteLine("Not implemented yet");
-        var newProgram = persistenceService.Load();
+    public int Execute(string filename, ProgramService programService) {
+        var newProgram = programService.Load(filename);
         return Result.Success;
     }
 }
