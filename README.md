@@ -53,3 +53,13 @@ In this example, the `HelloCommand` class implements the `hello` command. The `A
 The `Macro` attribute declares a macro that can be used to call `hello` with a pre-defined argument. The `Execute` method will be called when the user invokes the `hello` command.
 
 Note that macros can be defined in the configuration file as well as in code, and if defined in code, they may be defined on any static string property in any class.
+
+## Demo Applications
+
+There are three demo applications to demonstrate the features and capabilities of Cliffer:
+
+* [CliCalc](CliCalc) - A stack calculator implemented as a REPL (read/eval/print loop).
+* [ClifferBasic](ClifferBasic) - A BASIC interpreter in a REPL environment, like the old Commodore 64 or Apple ][ or TI-99/4A that so many of us grew up with.
+* [ClifferDemo](ClifferDemo) - A walkthrough of various Cliffer features.
+
+Unfortunately, these are all in various stages of being built, but feel free to explore them or even add to them.
