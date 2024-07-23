@@ -123,12 +123,12 @@ internal class ExpressionParser {
     internal Expression Primary() {
         if (Peek?.Type == TokenType.False) {
             Advance();
-            return new BoolExpression(false);
+            return new BooleanLiteralExpression(false);
         }
         
         if (Peek?.Type == TokenType.True) {
             Advance();
-            return new BoolExpression(true);
+            return new BooleanLiteralExpression(true);
         }
         
         if (Peek?.Type == TokenType.Number) {
@@ -156,6 +156,12 @@ internal class ExpressionParser {
         }
 
         if (Peek?.Type == TokenType.StringVariableName) {
+            var literal = Peek.Literal!.ToString()!;
+            Advance();
+            return new StringVariableExpression(literal);
+        }
+
+        if (Peek?.Type == TokenType.CommandName) {
             var literal = Peek.Literal!.ToString()!;
             Advance();
             return new StringVariableExpression(literal);

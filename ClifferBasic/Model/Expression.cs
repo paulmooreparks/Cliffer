@@ -29,10 +29,6 @@ internal abstract class LiteralExpression<T> : Expression  {
     }
 }
 
-internal class BooleanExpression : LiteralExpression<bool> {
-    internal BooleanExpression(bool value) : base(value) { }
-}
-
 internal class NumberExpression : LiteralExpression<object> {
     internal NumberExpression(object value) : base(value) {}
 
@@ -49,8 +45,12 @@ internal class StringExpression : LiteralExpression<string> {
     internal StringExpression(string value) : base(value) { }
 }
 
-internal class BoolExpression : LiteralExpression<bool> {
-    internal BoolExpression(bool value) : base(value) { }
+internal class BooleanLiteralExpression : LiteralExpression<bool> {
+    internal BooleanLiteralExpression(bool value) : base(value) { }
+
+    internal bool ToBool() {
+        return (bool)Value;
+    }
 }
 
 internal class VariableExpression : Expression {
@@ -72,6 +72,10 @@ internal class IntegerVariableExpression : VariableExpression {
         return Convert.ToInt32(Evaluate(store));
     }
 
+    internal bool ToBool(VariableStore store) {
+        return Convert.ToBoolean(Evaluate(store));
+    }
+
     internal override object Evaluate(VariableStore variableStore) {
         var variable = variableStore.GetVariable(Name) as IntegerVariable;
         return variable?.Value ?? throw new InvalidDataException($"Invalid type: {Name}");
@@ -87,6 +91,10 @@ internal class DoubleVariableExpression : VariableExpression {
 
     internal double ToInt(VariableStore store) {
         return Convert.ToInt32(Evaluate(store));
+    }
+
+    internal bool ToBool(VariableStore store) {
+        return Convert.ToBoolean(Evaluate(store));
     }
 
     internal override object Evaluate(VariableStore variableStore) {
@@ -105,6 +113,17 @@ internal class StringVariableExpression : VariableExpression {
     internal override object Evaluate(VariableStore variableStore) {
         var variable = variableStore.GetVariable(Name) as StringVariable;
         return variable?.Value ?? string.Empty;
+    }
+}
+
+internal class CommandExpression : Expression {
+    string _command;
+    internal CommandExpression(string name) : base() { 
+        _command = name;
+    }
+
+    internal override object Evaluate(VariableStore variableStore) {
+        return _command;
     }
 }
 
@@ -213,11 +232,12 @@ internal class BinaryExpression : Expression {
                     TokenType.Minus => new NumberExpression(lvalue.ToDouble() - rvalue.ToDouble()),
                     TokenType.Asterisk => new NumberExpression(lvalue.ToDouble() * rvalue.ToDouble()),
                     TokenType.ForwardSlash => new NumberExpression(lvalue.ToDouble() / rvalue.ToDouble()),
-                    TokenType.Equal => new BoolExpression(lvalue.ToDouble() == rvalue.ToDouble()),
-                    TokenType.GreaterThan => new BoolExpression(lvalue.ToDouble() > rvalue.ToDouble()),
-                    TokenType.GreaterThanOrEqual => new BoolExpression(lvalue.ToDouble() >= rvalue.ToDouble()),
-                    TokenType.LessThan => new BoolExpression(lvalue.ToDouble() < rvalue.ToDouble()),
-                    TokenType.LessThanOrEqual => new BoolExpression(lvalue.ToDouble() <= rvalue.ToDouble()),
+                    TokenType.Equal => new BooleanLiteralExpression(lvalue.ToDouble() == rvalue.ToDouble()),
+                    TokenType.NotEqual => new BooleanLiteralExpression(lvalue.ToDouble() != rvalue.ToDouble()),
+                    TokenType.GreaterThan => new BooleanLiteralExpression(lvalue.ToDouble() > rvalue.ToDouble()),
+                    TokenType.GreaterThanOrEqual => new BooleanLiteralExpression(lvalue.ToDouble() >= rvalue.ToDouble()),
+                    TokenType.LessThan => new BooleanLiteralExpression(lvalue.ToDouble() < rvalue.ToDouble()),
+                    TokenType.LessThanOrEqual => new BooleanLiteralExpression(lvalue.ToDouble() <= rvalue.ToDouble()),
                     _ => throw new Exception($"Invalid operator: {Operator.Lexeme}")
                 },
                 IntegerVariableExpression rvalue => Operator.Type switch {
@@ -225,11 +245,12 @@ internal class BinaryExpression : Expression {
                     TokenType.Minus => new NumberExpression(lvalue.ToDouble() - rvalue.ToInt(variableStore)),
                     TokenType.Asterisk => new NumberExpression(lvalue.ToDouble() * rvalue.ToInt(variableStore)),
                     TokenType.ForwardSlash => new NumberExpression(lvalue.ToDouble() / rvalue.ToInt(variableStore)),
-                    TokenType.Equal => new BoolExpression(lvalue.ToDouble() == rvalue.ToInt(variableStore)),
-                    TokenType.GreaterThan => new BoolExpression(lvalue.ToDouble() > rvalue.ToInt(variableStore)),
-                    TokenType.GreaterThanOrEqual => new BoolExpression(lvalue.ToDouble() >= rvalue.ToInt(variableStore)),
-                    TokenType.LessThan => new BoolExpression(lvalue.ToDouble() < rvalue.ToInt(variableStore)),
-                    TokenType.LessThanOrEqual => new BoolExpression(lvalue.ToDouble() <= rvalue.ToInt(variableStore)),
+                    TokenType.Equal => new BooleanLiteralExpression(lvalue.ToDouble() == rvalue.ToInt(variableStore)),
+                    TokenType.NotEqual => new BooleanLiteralExpression(lvalue.ToDouble() != rvalue.ToInt(variableStore)),
+                    TokenType.GreaterThan => new BooleanLiteralExpression(lvalue.ToDouble() > rvalue.ToInt(variableStore)),
+                    TokenType.GreaterThanOrEqual => new BooleanLiteralExpression(lvalue.ToDouble() >= rvalue.ToInt(variableStore)),
+                    TokenType.LessThan => new BooleanLiteralExpression(lvalue.ToDouble() < rvalue.ToInt(variableStore)),
+                    TokenType.LessThanOrEqual => new BooleanLiteralExpression(lvalue.ToDouble() <= rvalue.ToInt(variableStore)),
                     _ => throw new NotImplementedException()
                 },
                 DoubleVariableExpression rvalue => Operator.Type switch {
@@ -237,11 +258,12 @@ internal class BinaryExpression : Expression {
                     TokenType.Minus => new NumberExpression(lvalue.ToDouble() - rvalue.ToDouble(variableStore)),
                     TokenType.Asterisk => new NumberExpression(lvalue.ToDouble() * rvalue.ToDouble(variableStore)),
                     TokenType.ForwardSlash => new NumberExpression(lvalue.ToDouble() / rvalue.ToDouble(variableStore)),
-                    TokenType.Equal => new BoolExpression(lvalue.ToDouble() == rvalue.ToDouble(variableStore)),
-                    TokenType.GreaterThan => new BoolExpression(lvalue.ToDouble() > rvalue.ToDouble(variableStore)),
-                    TokenType.GreaterThanOrEqual => new BoolExpression(lvalue.ToDouble() >= rvalue.ToDouble(variableStore)),
-                    TokenType.LessThan => new BoolExpression(lvalue.ToDouble() < rvalue.ToDouble(variableStore)),
-                    TokenType.LessThanOrEqual => new BoolExpression(lvalue.ToDouble() <= rvalue.ToDouble(variableStore)),
+                    TokenType.Equal => new BooleanLiteralExpression(lvalue.ToDouble() == rvalue.ToDouble(variableStore)),
+                    TokenType.NotEqual => new BooleanLiteralExpression(lvalue.ToDouble() != rvalue.ToDouble(variableStore)),
+                    TokenType.GreaterThan => new BooleanLiteralExpression(lvalue.ToDouble() > rvalue.ToDouble(variableStore)),
+                    TokenType.GreaterThanOrEqual => new BooleanLiteralExpression(lvalue.ToDouble() >= rvalue.ToDouble(variableStore)),
+                    TokenType.LessThan => new BooleanLiteralExpression(lvalue.ToDouble() < rvalue.ToDouble(variableStore)),
+                    TokenType.LessThanOrEqual => new BooleanLiteralExpression(lvalue.ToDouble() <= rvalue.ToDouble(variableStore)),
                     _ => throw new NotImplementedException()
                 },
                 _ => throw new Exception($"Invalid type: {Right}")
@@ -254,11 +276,12 @@ internal class BinaryExpression : Expression {
                     TokenType.Minus => new NumberExpression(lvalue.ToInt(variableStore) - rvalue.ToInt()),
                     TokenType.Asterisk => new NumberExpression(lvalue.ToInt(variableStore) * rvalue.ToInt()),
                     TokenType.ForwardSlash => new NumberExpression(lvalue.ToInt(variableStore) / rvalue.ToInt()),
-                    TokenType.Equal => new BoolExpression(lvalue.ToInt(variableStore) == rvalue.ToInt()),
-                    TokenType.GreaterThan => new BoolExpression(lvalue.ToInt(variableStore) > rvalue.ToInt()),
-                    TokenType.GreaterThanOrEqual => new BoolExpression(lvalue.ToInt(variableStore) >= rvalue.ToInt()),
-                    TokenType.LessThan => new BoolExpression(lvalue.ToInt(variableStore) < rvalue.ToInt()),
-                    TokenType.LessThanOrEqual => new BoolExpression(lvalue.ToInt(variableStore) <= rvalue.ToInt()),
+                    TokenType.Equal => new BooleanLiteralExpression(lvalue.ToInt(variableStore) == rvalue.ToInt()),
+                    TokenType.NotEqual => new BooleanLiteralExpression(lvalue.ToInt(variableStore) != rvalue.ToInt()),
+                    TokenType.GreaterThan => new BooleanLiteralExpression(lvalue.ToInt(variableStore) > rvalue.ToInt()),
+                    TokenType.GreaterThanOrEqual => new BooleanLiteralExpression(lvalue.ToInt(variableStore) >= rvalue.ToInt()),
+                    TokenType.LessThan => new BooleanLiteralExpression(lvalue.ToInt(variableStore) < rvalue.ToInt()),
+                    TokenType.LessThanOrEqual => new BooleanLiteralExpression(lvalue.ToInt(variableStore) <= rvalue.ToInt()),
                     _ => throw new Exception($"Invalid operator: {Operator.Lexeme}")
                 },
                 IntegerVariableExpression rvalue => Operator.Type switch {
@@ -266,11 +289,12 @@ internal class BinaryExpression : Expression {
                     TokenType.Minus => new NumberExpression(lvalue.ToInt(variableStore) - rvalue.ToInt(variableStore)),
                     TokenType.Asterisk => new NumberExpression(lvalue.ToInt(variableStore) * rvalue.ToInt(variableStore)),
                     TokenType.ForwardSlash => new NumberExpression(lvalue.ToInt(variableStore) / rvalue.ToInt(variableStore)),
-                    TokenType.Equal => new BoolExpression(lvalue.ToInt(variableStore) == rvalue.ToInt(variableStore)),
-                    TokenType.GreaterThan => new BoolExpression(lvalue.ToInt(variableStore) > rvalue.ToInt(variableStore)),
-                    TokenType.GreaterThanOrEqual => new BoolExpression(lvalue.ToInt(variableStore) >= rvalue.ToInt(variableStore)),
-                    TokenType.LessThan => new BoolExpression(lvalue.ToInt(variableStore) < rvalue.ToInt(variableStore)),
-                    TokenType.LessThanOrEqual => new BoolExpression(lvalue.ToInt(variableStore) <= rvalue.ToInt(variableStore)),
+                    TokenType.Equal => new BooleanLiteralExpression(lvalue.ToInt(variableStore) == rvalue.ToInt(variableStore)),
+                    TokenType.NotEqual => new BooleanLiteralExpression(lvalue.ToInt(variableStore) != rvalue.ToInt(variableStore)),
+                    TokenType.GreaterThan => new BooleanLiteralExpression(lvalue.ToInt(variableStore) > rvalue.ToInt(variableStore)),
+                    TokenType.GreaterThanOrEqual => new BooleanLiteralExpression(lvalue.ToInt(variableStore) >= rvalue.ToInt(variableStore)),
+                    TokenType.LessThan => new BooleanLiteralExpression(lvalue.ToInt(variableStore) < rvalue.ToInt(variableStore)),
+                    TokenType.LessThanOrEqual => new BooleanLiteralExpression(lvalue.ToInt(variableStore) <= rvalue.ToInt(variableStore)),
                     _ => throw new Exception($"Invalid operator: {Operator.Lexeme}")
                 },
                 DoubleVariableExpression rvalue => Operator.Type switch {
@@ -278,12 +302,18 @@ internal class BinaryExpression : Expression {
                     TokenType.Minus => new NumberExpression(lvalue.ToInt(variableStore) - rvalue.ToInt(variableStore)),
                     TokenType.Asterisk => new NumberExpression(lvalue.ToInt(variableStore) * rvalue.ToInt(variableStore)),
                     TokenType.ForwardSlash => new NumberExpression(lvalue.ToInt(variableStore) / rvalue.ToInt(variableStore)),
-                    TokenType.Equal => new BoolExpression(lvalue.ToInt(variableStore) == rvalue.ToInt(variableStore)),
-                    TokenType.GreaterThan => new BoolExpression(lvalue.ToInt(variableStore) > rvalue.ToInt(variableStore)),
-                    TokenType.GreaterThanOrEqual => new BoolExpression(lvalue.ToInt(variableStore) >= rvalue.ToInt(variableStore)),
-                    TokenType.LessThan => new BoolExpression(lvalue.ToInt(variableStore) < rvalue.ToInt(variableStore)),
-                    TokenType.LessThanOrEqual => new BoolExpression(lvalue.ToInt(variableStore) <= rvalue.ToInt(variableStore)),
+                    TokenType.Equal => new BooleanLiteralExpression(lvalue.ToInt(variableStore) == rvalue.ToInt(variableStore)),
+                    TokenType.NotEqual => new BooleanLiteralExpression(lvalue.ToInt(variableStore) != rvalue.ToInt(variableStore)),
+                    TokenType.GreaterThan => new BooleanLiteralExpression(lvalue.ToInt(variableStore) > rvalue.ToInt(variableStore)),
+                    TokenType.GreaterThanOrEqual => new BooleanLiteralExpression(lvalue.ToInt(variableStore) >= rvalue.ToInt(variableStore)),
+                    TokenType.LessThan => new BooleanLiteralExpression(lvalue.ToInt(variableStore) < rvalue.ToInt(variableStore)),
+                    TokenType.LessThanOrEqual => new BooleanLiteralExpression(lvalue.ToInt(variableStore) <= rvalue.ToInt(variableStore)),
                     _ => throw new Exception($"Invalid operator: {Operator.Lexeme}")
+                },
+                BooleanLiteralExpression rvalue => Operator.Type switch {
+                    TokenType.Equal => new BooleanLiteralExpression(lvalue.ToBool(variableStore) == rvalue.ToBool()),
+                    TokenType.NotEqual => new BooleanLiteralExpression(lvalue.ToBool(variableStore) != rvalue.ToBool()),
+                    _ => throw new NotImplementedException()
                 },
                 _ => throw new Exception($"Invalid type: {Right}")
             },
@@ -295,11 +325,12 @@ internal class BinaryExpression : Expression {
                     TokenType.Minus => new NumberExpression(lvalue.ToDouble(variableStore) - rvalue.ToDouble()),
                     TokenType.Asterisk => new NumberExpression(lvalue.ToDouble(variableStore) * rvalue.ToDouble()),
                     TokenType.ForwardSlash => new NumberExpression(lvalue.ToDouble(variableStore) / rvalue.ToDouble()),
-                    TokenType.Equal => new BoolExpression(lvalue.ToDouble(variableStore) == rvalue.ToDouble()),
-                    TokenType.GreaterThan => new BoolExpression(lvalue.ToDouble(variableStore) > rvalue.ToDouble()),
-                    TokenType.GreaterThanOrEqual => new BoolExpression(lvalue.ToDouble(variableStore) >= rvalue.ToDouble()),
-                    TokenType.LessThan => new BoolExpression(lvalue.ToDouble(variableStore) < rvalue.ToDouble()),
-                    TokenType.LessThanOrEqual => new BoolExpression(lvalue.ToDouble(variableStore) <= rvalue.ToDouble()),
+                    TokenType.Equal => new BooleanLiteralExpression(lvalue.ToDouble(variableStore) == rvalue.ToDouble()),
+                    TokenType.NotEqual => new BooleanLiteralExpression(lvalue.ToDouble(variableStore) != rvalue.ToDouble()),
+                    TokenType.GreaterThan => new BooleanLiteralExpression(lvalue.ToDouble(variableStore) > rvalue.ToDouble()),
+                    TokenType.GreaterThanOrEqual => new BooleanLiteralExpression(lvalue.ToDouble(variableStore) >= rvalue.ToDouble()),
+                    TokenType.LessThan => new BooleanLiteralExpression(lvalue.ToDouble(variableStore) < rvalue.ToDouble()),
+                    TokenType.LessThanOrEqual => new BooleanLiteralExpression(lvalue.ToDouble(variableStore) <= rvalue.ToDouble()),
                     _ => throw new Exception($"Invalid operator: {Operator.Lexeme}")
                 },
                 IntegerVariableExpression rvalue => Operator.Type switch {
@@ -307,11 +338,12 @@ internal class BinaryExpression : Expression {
                     TokenType.Minus => new NumberExpression(lvalue.ToDouble(variableStore) - rvalue.ToInt(variableStore)),
                     TokenType.Asterisk => new NumberExpression(lvalue.ToDouble(variableStore) * rvalue.ToInt(variableStore)),
                     TokenType.ForwardSlash => new NumberExpression(lvalue.ToDouble(variableStore) / rvalue.ToInt(variableStore)),
-                    TokenType.Equal => new BoolExpression(lvalue.ToDouble(variableStore) == rvalue.ToInt(variableStore)),
-                    TokenType.GreaterThan => new BoolExpression(lvalue.ToDouble(variableStore) > rvalue.ToInt(variableStore)),
-                    TokenType.GreaterThanOrEqual => new BoolExpression(lvalue.ToDouble(variableStore) >= rvalue.ToInt(variableStore)),
-                    TokenType.LessThan => new BoolExpression(lvalue.ToDouble(variableStore) < rvalue.ToInt(variableStore)),
-                    TokenType.LessThanOrEqual => new BoolExpression(lvalue.ToDouble(variableStore) <= rvalue.ToInt(variableStore)),
+                    TokenType.Equal => new BooleanLiteralExpression(lvalue.ToDouble(variableStore) == rvalue.ToInt(variableStore)),
+                    TokenType.NotEqual => new BooleanLiteralExpression(lvalue.ToDouble(variableStore) != rvalue.ToInt(variableStore)),
+                    TokenType.GreaterThan => new BooleanLiteralExpression(lvalue.ToDouble(variableStore) > rvalue.ToInt(variableStore)),
+                    TokenType.GreaterThanOrEqual => new BooleanLiteralExpression(lvalue.ToDouble(variableStore) >= rvalue.ToInt(variableStore)),
+                    TokenType.LessThan => new BooleanLiteralExpression(lvalue.ToDouble(variableStore) < rvalue.ToInt(variableStore)),
+                    TokenType.LessThanOrEqual => new BooleanLiteralExpression(lvalue.ToDouble(variableStore) <= rvalue.ToInt(variableStore)),
                     _ => throw new Exception($"Invalid operator: {Operator.Lexeme}")
                 },
                 DoubleVariableExpression rvalue => Operator.Type switch {
@@ -319,12 +351,18 @@ internal class BinaryExpression : Expression {
                     TokenType.Minus => new NumberExpression(lvalue.ToDouble(variableStore) - rvalue.ToDouble(variableStore)),
                     TokenType.Asterisk => new NumberExpression(lvalue.ToDouble(variableStore) * rvalue.ToDouble(variableStore)),
                     TokenType.ForwardSlash => new NumberExpression(lvalue.ToDouble(variableStore) / rvalue.ToDouble(variableStore)),
-                    TokenType.Equal => new BoolExpression(lvalue.ToDouble(variableStore) == rvalue.ToDouble(variableStore)),
-                    TokenType.GreaterThan => new BoolExpression(lvalue.ToDouble(variableStore) > rvalue.ToDouble(variableStore)),
-                    TokenType.GreaterThanOrEqual => new BoolExpression(lvalue.ToDouble(variableStore) >= rvalue.ToDouble(variableStore)),
-                    TokenType.LessThan => new BoolExpression(lvalue.ToDouble(variableStore) < rvalue.ToDouble(variableStore)),
-                    TokenType.LessThanOrEqual => new BoolExpression(lvalue.ToDouble(variableStore) <= rvalue.ToDouble(variableStore)),
+                    TokenType.Equal => new BooleanLiteralExpression(lvalue.ToDouble(variableStore) == rvalue.ToDouble(variableStore)),
+                    TokenType.NotEqual => new BooleanLiteralExpression(lvalue.ToDouble(variableStore) != rvalue.ToDouble(variableStore)),
+                    TokenType.GreaterThan => new BooleanLiteralExpression(lvalue.ToDouble(variableStore) > rvalue.ToDouble(variableStore)),
+                    TokenType.GreaterThanOrEqual => new BooleanLiteralExpression(lvalue.ToDouble(variableStore) >= rvalue.ToDouble(variableStore)),
+                    TokenType.LessThan => new BooleanLiteralExpression(lvalue.ToDouble(variableStore) < rvalue.ToDouble(variableStore)),
+                    TokenType.LessThanOrEqual => new BooleanLiteralExpression(lvalue.ToDouble(variableStore) <= rvalue.ToDouble(variableStore)),
                     _ => throw new Exception($"Invalid operator: {Operator.Lexeme}")
+                },
+                BooleanLiteralExpression rvalue => Operator.Type switch {
+                    TokenType.Equal => new BooleanLiteralExpression(lvalue.ToBool(variableStore) == rvalue.ToBool()),
+                    TokenType.NotEqual => new BooleanLiteralExpression(lvalue.ToBool(variableStore) != rvalue.ToBool()),
+                    _ => throw new NotImplementedException()
                 },
                 _ => throw new Exception($"Invalid type: {Right}")
             },

@@ -20,6 +20,7 @@ internal class ClifferBasic {
                 services.AddSingleton<VariableStore>();
                 services.AddSingleton<Tokenizer>();
                 services.AddSingleton<ExpressionParser>();
+                services.AddSingleton<ExpressionBuilder>();
                 services.AddSingleton<PersistenceService>();
                 services.AddSingleton<CommandSplitter>();
                 services.AddSingleton<Dictionary<int, string[]>>(provider => { 

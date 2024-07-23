@@ -14,20 +14,24 @@ namespace ClifferBasic.Commands;
 internal class PrintCommand {
     public int Execute(
         IEnumerable<string> args,
-        Tokenizer tokenizer,
-        ExpressionParser expressionParser,
+        ExpressionBuilder expressionBuilder,
         VariableStore variableStore
-        ) {
+        ) 
+    {
         if (!args.Any()) {
             Console.WriteLine();
             return Result.Success;
         }
 
-        var tokens = tokenizer.Tokenize(args);
-        var expression = expressionParser.Parse(tokens);
-        var result = expression.Evaluate(variableStore);
-        Console.WriteLine(result);
+        var expression = expressionBuilder.BuildExpression(args);
 
-        return Result.Success;
+        if (expression is not null) {
+            var result = expression.Evaluate(variableStore);
+            Console.WriteLine(result);
+            return Result.Success;
+        }
+
+        Console.Error.WriteLine("Invalid expression");
+        return Result.Error;
     }
 }

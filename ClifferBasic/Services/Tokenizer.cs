@@ -81,6 +81,27 @@ internal class Tokenizer {
         return char.IsLetterOrDigit(c) | c == '_' | c == '$' | c == '#' | c == '%';
     }
 
+    private readonly Dictionary<string, TokenType> Keywords = new Dictionary<string, TokenType>() {
+        {"then", TokenType.CommandName},
+        {"goto", TokenType.CommandName},
+        {"gosub", TokenType.CommandName},
+        {"print", TokenType.CommandName},
+        {"let", TokenType.CommandName},
+    };
+
+    private bool IsKeyword(string compare, out TokenType tokenType) {
+        return Keywords.TryGetValue(compare, out tokenType);
+    }
+
+    private readonly Dictionary<string, TokenType> Constants = new Dictionary<string, TokenType>() {
+        {"true", TokenType.True },
+        {"false", TokenType.False },
+    };
+
+    private bool IsConstant(string compare, out TokenType tokenType) {
+        return Constants.TryGetValue(compare, out tokenType);
+    }
+
     internal IEnumerable<Token> Tokenize(string input) {
         var tokenList = new List<Token>();
         ScanString = input;
@@ -103,17 +124,21 @@ internal class Tokenizer {
                     tokenList.Add(new Token(CurrentString, TokenType.Number, doubleValue));
                 }
             }
-            else if (char.IsLetter(CurrentChar) || CurrentChar == '_') {
+            else if (char.IsLetterOrDigit(CurrentChar) | CurrentChar == '_') {
                 while (IsVariableChar(Peek)) {
                     Expand();
                 }
 
-                var tokenType = CurrentString.Last() switch {
-                    '$' => TokenType.StringVariableName,
-                    '#' => TokenType.IntegerVariableName,
-                    '%' => TokenType.DoubleVariableName,
-                    _ => TokenType.DoubleVariableName
-                };
+                TokenType tokenType;
+
+                if (!IsKeyword(CurrentString, out tokenType) && !IsConstant(CurrentString, out tokenType)) {
+                    tokenType = CurrentString.Last() switch {
+                        '$' => TokenType.StringVariableName,
+                        '#' => TokenType.IntegerVariableName,
+                        '%' => TokenType.DoubleVariableName,
+                        _ => TokenType.DoubleVariableName
+                    };
+                }
 
                 tokenList.Add(new Token(CurrentString, tokenType, CurrentString));
             }

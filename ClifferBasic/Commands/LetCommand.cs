@@ -15,8 +15,7 @@ namespace ClifferBasic.Commands;
 internal class LetCommand {
     public int Execute(
         IEnumerable<string> args,
-        Tokenizer tokenizer,
-        ExpressionParser expressionParser,
+        ExpressionBuilder expressionBuilder,
         VariableStore variableStore
         ) 
     {
@@ -30,8 +29,7 @@ internal class LetCommand {
             return Result.Error;
         }
 
-        var tokens = tokenizer.Tokenize(args);
-        var expression = expressionParser.Parse(tokens);
+        var expression = expressionBuilder.BuildExpression(args);
 
         if (expression is BinaryExpression binaryExpression && binaryExpression.Operator.Lexeme == "=") {
             if (binaryExpression.Left is DoubleVariableExpression doubleVariable) {

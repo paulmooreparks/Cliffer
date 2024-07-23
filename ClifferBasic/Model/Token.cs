@@ -62,5 +62,5 @@ internal enum TokenType {
     Xor,
     False,
     True,
-    Then
+    Unknown
 }
