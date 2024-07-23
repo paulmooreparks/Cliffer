@@ -27,6 +27,14 @@ internal class ExpressionParser {
         return _current;
     }
 
+    internal Token? Consume(TokenType type, string errorMessage) {
+        if (Check(type)) {
+            return Advance();
+        }
+
+        throw new InvalidOperationException(errorMessage);
+    }
+
     private bool IsAtEnd { get; set; } = false;
 
     private Token? Peek => _next;
@@ -34,7 +42,6 @@ internal class ExpressionParser {
     private Token? Current => _current;
 
     internal Expression Parse(IEnumerable<Token> tokens) {
-        // return new BinaryExpression(new NumberExpression(2), "+", new NumberExpression(2));
         _tokens = tokens.GetEnumerator();
         Advance();
         return Expression();
@@ -72,12 +79,6 @@ internal class ExpressionParser {
 
     internal Expression Term() {
         Expression expr = Factor();
-
-#if false
-        if (Peek is null) {
-            return expr;
-        }
-#endif
 
         while (Peek?.Type == TokenType.Minus || Peek?.Type == TokenType.Plus) {
             Token op = Peek;
@@ -168,14 +169,6 @@ internal class ExpressionParser {
         }
 
         throw new InvalidOperationException($"Unexpected token: {Peek}");
-    }
-
-    internal Token? Consume(TokenType type, string errorMessage) {
-        if (Check(type)) {
-            return Advance();
-        }
-
-        throw new InvalidOperationException(errorMessage);
     }
 }
 
