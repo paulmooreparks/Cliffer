@@ -10,7 +10,9 @@ using ClifferBasic.Services;
 
 namespace ClifferBasic.Model;
 internal class ProgramModel {
-    private Dictionary<int, string[]> _listing = new ();
+    private SortedDictionary<int, string[]> _listing = new ();
+    private SortedDictionary<int, string[]>.Enumerator _ip;
+    private CommandSplitter _splitter;
 
     internal string[] Listing { 
         get {
@@ -24,26 +26,19 @@ internal class ProgramModel {
             return lines.ToArray();
         }
         set {
-            var splitter = Utility.GetService<CommandSplitter>()!;
             foreach (var line in value) {
-                var tokens = splitter.Split(line).ToArray();
+                var tokens = _splitter.Split(line).ToArray();
                 if (tokens.Length > 1 && int.TryParse(tokens[0], out int lineNumber)) {
                     SetLine(lineNumber, tokens.Skip(1).ToArray());
                 }
             }
         }
     }
-    public ProgramModel() { }
 
-    public ProgramModel(Dictionary<int, string[]> listing) {
-        _listing = listing;
+    public ProgramModel(CommandSplitter splitter) { 
+        _splitter = splitter;
+        _ip = _listing.GetEnumerator();
     }
-
-    internal void SetLineDictionary(Dictionary<int, string[]> listing) {
-        _listing = listing;
-    }
-
-    internal Dictionary<int, string[]> GetLineDictionary() => _listing;
 
     internal void SetLine(int lineNumber, string[] items) {
         if (_listing.ContainsKey(lineNumber)) {
@@ -63,5 +58,29 @@ internal class ProgramModel {
 
     internal void New() { 
         _listing.Clear();
+    }
+
+    internal void Reset() {
+        _ip = _listing.GetEnumerator();
+    }
+
+    internal bool IsAtEnd { get; private set; } = false;
+
+    internal string[] Current {
+        get {
+            return _ip.Current.Value;
+        }
+    }
+
+    internal string[]? Advance() {
+        if (_ip.MoveNext()) {
+            return _ip.Current.Value;
+        }
+
+        IsAtEnd = true;
+        return null;
+    }
+
+    internal void Goto(int lineNumber) {
     }
 }

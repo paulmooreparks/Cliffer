@@ -17,6 +17,7 @@ internal class BasicReplContext : Cliffer.DefaultReplContext {
 
     public override string GetPrompt(Command command, InvocationContext context) => "> ";
 
+    public override string[] GetExitCommands() => ["bye", "goodbye"];
     public override string[] GetPopCommands() => [];
 
     public override void OnEntry() {

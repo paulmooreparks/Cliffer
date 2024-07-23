@@ -14,9 +14,10 @@ namespace ClifferBasic.Services;
 internal class ProgramService {
     private string _filePath = string.Empty;
 
-    internal ProgramModel Program { get; } = new();
+    internal ProgramModel Program { get; }
 
-    public ProgramService() {
+    public ProgramService(CommandSplitter splitter) {
+        Program = new ProgramModel(splitter);
         var homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         Directory.SetCurrentDirectory(homeDirectory);
         var cliBasicDirectory = Path.Combine(homeDirectory, ".clibasic");
@@ -69,5 +70,8 @@ internal class ProgramService {
 
     internal void New() { 
         Program.New();
+    }
+
+    internal void Renumber() {
     }
 }
