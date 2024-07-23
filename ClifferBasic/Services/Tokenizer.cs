@@ -78,7 +78,7 @@ internal class Tokenizer {
     }
 
     private bool IsVariableChar(char c) {
-        return char.IsLetterOrDigit(c) | c == '_';
+        return char.IsLetterOrDigit(c) | c == '_' | c == '$' | c == '#' | c == '%';
     }
 
     internal IEnumerable<Token> Tokenize(string input) {
@@ -108,7 +108,14 @@ internal class Tokenizer {
                     Expand();
                 }
 
-                tokenList.Add(new Token(CurrentString, TokenType.VariableName, CurrentString));
+                var tokenType = CurrentString.Last() switch {
+                    '$' => TokenType.StringVariableName,
+                    '#' => TokenType.IntegerVariableName,
+                    '%' => TokenType.DoubleVariableName,
+                    _ => TokenType.DoubleVariableName
+                };
+
+                tokenList.Add(new Token(CurrentString, tokenType, CurrentString));
             }
             else {
                 switch (CurrentChar) {

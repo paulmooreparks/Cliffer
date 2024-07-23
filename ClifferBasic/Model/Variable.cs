@@ -7,40 +7,22 @@ using System.Threading.Tasks;
 namespace ClifferBasic.Model;
 
 internal class Variable {
-    internal object Value { get; }
     internal Type Type { get; }
 
-    internal Variable(object value, Type type) {
-        Value = value;
+    internal Variable(Type type) {
         Type = type;
     }
+}
 
-    internal double AsDouble() {
-        if (Type == typeof(double) || Type == typeof(float) || Type == typeof(int) || Type == typeof(long)) {
-            return Convert.ToDouble(Value);
-        }
+internal class IntegerVariable : Variable {
+    internal int Value { get; set; }
 
-        throw new InvalidOperationException($"Cannot convert type {Type} to double.");
+    internal IntegerVariable(int value) : base(typeof(int)) {
+        Value = value;
     }
 
-    internal int AsInteger() {
-        if (Type == typeof(double) || Type == typeof(float) || Type == typeof(int) || Type == typeof(long)) {
-            return Convert.ToInt32(Value);
-        }
-
-        throw new InvalidOperationException($"Cannot convert type {Type} to integer.");
-    }
-
-    internal string AsString() {
-        if (Value is null || string.IsNullOrEmpty(Value.ToString())) {
-            return string.Empty;
-        }
-
-        if (Type == typeof(double) || Type == typeof(float) || Type == typeof(int) || Type == typeof(long)) {
-            return Value.ToString()!;
-        }
-
-        throw new InvalidOperationException($"Cannot convert type {Type} to string.");
+    internal IntegerVariable(object value) : base(typeof(int)) {
+        Value = Convert.ToInt32(value);
     }
 
     public override string? ToString() {
@@ -48,7 +30,35 @@ internal class Variable {
     }
 }
 
-internal class NumericVariable : Variable {
-    internal NumericVariable(double value, Type type) : base(value, type) {
+internal class DoubleVariable : Variable {
+    internal double Value { get; set; }
+
+    internal DoubleVariable(double value) : base(typeof(double)) {
+        Value = value;
+    }
+
+    internal DoubleVariable(object value) : base(typeof(double)) {
+        Value = Convert.ToDouble(value);
+    }
+
+    public override string? ToString() {
+        return Value.ToString();
     }
 }
+
+internal class StringVariable : Variable {
+    internal string Value { get; set; }
+
+    internal StringVariable(string value) : base(typeof(string)) {
+        Value = value;
+    }
+
+    internal StringVariable(object value) : base(typeof(string)) {
+        Value = value?.ToString() ?? string.Empty;
+    }
+
+    public override string? ToString() {
+        return Value;
+    }
+}
+

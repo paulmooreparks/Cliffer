@@ -9,13 +9,6 @@ internal class ExpressionParser {
 
     public ExpressionParser() { }
 
-    internal Expression Parse(IEnumerable<Token> tokens) {
-        // return new BinaryExpression(new NumberExpression(2), "+", new NumberExpression(2));
-        _tokens = tokens.GetEnumerator();
-        Advance();
-        return Expression();
-    }
-
     private bool Check(TokenType type) {
         if (IsAtEnd) { return false; }
         return Peek?.Type == type;
@@ -41,41 +34,25 @@ internal class ExpressionParser {
 
     private Token? Current => _current;
 
-    internal Expression Expression() {
-        return Assignment();
+    internal Expression Parse(IEnumerable<Token> tokens) {
+        // return new BinaryExpression(new NumberExpression(2), "+", new NumberExpression(2));
+        _tokens = tokens.GetEnumerator();
+        Advance();
+        return Expression();
     }
 
-    internal Expression Assignment() {
-        Expression expr = Equality();
-
-        if (Peek?.Type == TokenType.Equal) {
-            if (expr is VariableExpression variableExpression) {
-                Token op = Peek;
-                Advance();
-                Expression right = Expression();
-                return new AssignmentExpression(variableExpression, right);
-#if false
-                if (right is StringExpression stringExpression) {
-                    var stringVariableExpression = new StringVariableExpression(variableExpression.Name);
-                }
-#endif
-            }
-            else {
-                return Equality();
-            }
-        }
-
-        return expr;
+    internal Expression Expression() {
+        return Equality();
     }
 
     internal Expression Equality() {
         Expression expr = Comparison();
 
-        if (Peek?.Type == TokenType.Equal || Peek?.Type == TokenType.NotEqual) {
+        while (Peek?.Type == TokenType.Equal || Peek?.Type == TokenType.NotEqual) {
             Token op = Peek;
             Advance();
             Expression right = Comparison();
-            return new BinaryExpression(expr, op, right);
+            expr = new BinaryExpression(expr, op, right);
         }
 
         return expr;
@@ -84,12 +61,12 @@ internal class ExpressionParser {
     internal Expression Comparison() {
         Expression expr = Term();
 
-        if (Peek?.Type == TokenType.Equal || Peek?.Type == TokenType.GreaterThan || Peek?.Type == TokenType.GreaterThanOrEqual || Peek?.Type == TokenType.LessThan || Peek?.Type == TokenType.LessThanOrEqual) {
+        while (Peek?.Type == TokenType.GreaterThan || Peek?.Type == TokenType.GreaterThanOrEqual || Peek?.Type == TokenType.LessThan || Peek?.Type == TokenType.LessThanOrEqual) {
             Token op = Peek;
             Advance();
             Expression right = Term();
-            return new BinaryExpression(expr, op, right);
-        };
+            expr = new BinaryExpression(expr, op, right);
+        }
 
         return expr;
     }
@@ -97,16 +74,18 @@ internal class ExpressionParser {
     internal Expression Term() {
         Expression expr = Factor();
 
+#if false
         if (Peek is null) {
             return expr;
         }
+#endif
 
-        if (Peek?.Type == TokenType.Minus || Peek?.Type == TokenType.Plus) {
+        while (Peek?.Type == TokenType.Minus || Peek?.Type == TokenType.Plus) {
             Token op = Peek;
             Advance();
             Expression right = Factor();
-            return new BinaryExpression(expr, op, right);
-        };
+            expr = new BinaryExpression(expr, op, right);
+        }
 
         return expr;
     }
@@ -114,25 +93,30 @@ internal class ExpressionParser {
     internal Expression Factor() {
         Expression expr = Unary();
 
-        if (Peek?.Type == TokenType.Asterisk || Peek?.Type == TokenType.ForwardSlash) {
+        while (Peek?.Type == TokenType.Asterisk || Peek?.Type == TokenType.ForwardSlash) {
             Token op = Peek;
             Advance();
             Expression right = Unary();
-            return new BinaryExpression(expr, op, right);
-        };
+            expr = new BinaryExpression(expr, op, right);
+        }
 
         return expr;
     }
 
     internal Expression Unary() {
-        if (Peek?.Type == TokenType.Minus) {
+        if (Peek?.Type == TokenType.Minus || Peek?.Type == TokenType.Not) {
             Token op = Peek;
             Advance();
             Expression right = Unary();
             return new UnaryExpression(op, right);
         };
 
-        return Primary();
+        return Call();
+    }
+
+    internal Expression Call() {
+        Expression expr = Primary();
+        return expr;
     }
 
 
@@ -150,7 +134,7 @@ internal class ExpressionParser {
         if (Peek?.Type == TokenType.Number) {
             var literal = Peek.Literal;
             Advance();
-            return new NumberExpression(Convert.ToDouble(literal));
+            return new NumberExpression(literal!);
         }
         
         if (Peek?.Type == TokenType.String) {
@@ -159,10 +143,22 @@ internal class ExpressionParser {
             return new StringExpression(literal);
         }
 
-        if (Peek?.Type == TokenType.VariableName) {
+        if (Peek?.Type == TokenType.IntegerVariableName) {
             var literal = Peek.Literal!.ToString()!;
             Advance();
-            return new VariableExpression(literal);
+            return new IntegerVariableExpression(literal);
+        }
+
+        if (Peek?.Type == TokenType.DoubleVariableName) {
+            var literal = Peek.Literal!.ToString()!;
+            Advance();
+            return new DoubleVariableExpression(literal);
+        }
+
+        if (Peek?.Type == TokenType.StringVariableName) {
+            var literal = Peek.Literal!.ToString()!;
+            Advance();
+            return new StringVariableExpression(literal);
         }
 
         if (Peek?.Type == TokenType.LeftParenthesis) {

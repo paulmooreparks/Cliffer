@@ -20,4 +20,5 @@ public interface IReplContext {
     string[] GetHelpCommands();
     string[] SplitCommandLine(string input);
     string[] PreprocessArgs(string[] args, Command command, InvocationContext context);
+    Task<int> RunAsync(Command command, string[] args);
 }

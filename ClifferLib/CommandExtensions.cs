@@ -58,7 +58,7 @@ public static class CommandExtensions {
                 args = replContext.PreprocessArgs(args, command, context);
             }
 
-            await command.RunAsync(args);
+            await replContext.RunAsync(command, args);
         }
     }
 }

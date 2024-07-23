@@ -30,8 +30,16 @@ internal abstract class LiteralExpression<T> : Expression  {
 
 }
 
-internal class NumberExpression : LiteralExpression<double> {
-    internal NumberExpression(double value) : base(value) {}
+internal class NumberExpression : LiteralExpression<object> {
+    internal NumberExpression(object value) : base(value) {}
+
+    internal int ToInt() {
+        return Convert.ToInt32(Value);
+    }
+
+    internal double ToDouble() {
+        return Convert.ToDouble(Value);
+    }
 }
 
 internal class StringExpression : LiteralExpression<string> {
@@ -54,6 +62,19 @@ internal class VariableExpression : Expression {
     }
 }
 
+internal class IntegerVariableExpression : VariableExpression {
+    internal IntegerVariableExpression(string name) : base(name) { }
+
+    internal int ToInt(VariableStore store) {
+        return Convert.ToInt32(Evaluate(store));
+    }
+
+    internal override object Evaluate(VariableStore variableStore) {
+        var variable = variableStore.GetVariable(Name) as IntegerVariable;
+        return variable?.Value ?? throw new InvalidDataException($"Invalid type: {Name}");
+    }
+}
+
 internal class DoubleVariableExpression : VariableExpression {
     internal DoubleVariableExpression(string name) : base(name) { }
 
@@ -61,15 +82,14 @@ internal class DoubleVariableExpression : VariableExpression {
         return Convert.ToDouble(Evaluate(store));
     }
 
+    internal double ToInt(VariableStore store) {
+        return Convert.ToInt32(Evaluate(store));
+    }
+
     internal override object Evaluate(VariableStore variableStore) {
-        Convert.ToDouble(variableStore.GetVariable(Name));
-        return variableStore.GetVariable(Name);
+        var variable = variableStore.GetVariable(Name) as DoubleVariable;
+        return variable?.Value ?? throw new InvalidDataException($"Invalid type: {Name}");
     }
-
-    internal T Evaluate<T>(VariableStore variableStore) {
-        return ToDouble(variableStore);
-    }
-
 }
 
 internal class StringVariableExpression : VariableExpression {
@@ -80,7 +100,8 @@ internal class StringVariableExpression : VariableExpression {
     }
 
     internal override object Evaluate(VariableStore variableStore) {
-        return variableStore.GetVariable(Name).ToString() ?? string.Empty;
+        var variable = variableStore.GetVariable(Name) as StringVariable;
+        return variable?.Value ?? string.Empty;
     }
 }
 
@@ -98,17 +119,45 @@ internal class AssignmentExpression : Expression {
     }
 }
 
-internal class StringAssignmentExpression : Expression {
-    internal VariableExpression Left { get; }
+internal class IntegerAssignmentExpression : Expression {
+    internal IntegerVariableExpression Left { get; }
     internal Expression Right { get; }
 
-    internal StringAssignmentExpression(VariableExpression left, Expression right) {
+    internal IntegerAssignmentExpression(IntegerVariableExpression left, Expression right) {
         Left = left;
         Right = right;
     }
 
     internal override object Evaluate(VariableStore variableStore) {
-        throw new NotImplementedException();
+        return variableStore.SetVariable(Left.Name, Right.Evaluate(variableStore));
+    }
+}
+
+internal class DoubleAssignmentExpression : Expression {
+    internal DoubleVariableExpression Left { get; }
+    internal Expression Right { get; }
+
+    internal DoubleAssignmentExpression(DoubleVariableExpression left, Expression right) {
+        Left = left;
+        Right = right;
+    }
+
+    internal override object Evaluate(VariableStore variableStore) {
+        return variableStore.SetVariable(Left.Name, Right.Evaluate(variableStore));
+    }
+}
+
+internal class StringAssignmentExpression : Expression {
+    internal StringVariableExpression Left { get; }
+    internal Expression Right { get; }
+
+    internal StringAssignmentExpression(StringVariableExpression left, Expression right) {
+        Left = left;
+        Right = right;
+    }
+
+    internal override object Evaluate(VariableStore variableStore) {
+        return variableStore.SetVariable(Left.Name, Right.Evaluate(variableStore));
     }
 }
 
@@ -151,47 +200,114 @@ internal class BinaryExpression : Expression {
 
     internal override object Evaluate(VariableStore variableStore) {
         Expression result =  Left switch {
+            BinaryExpression lvalue => new BinaryExpression(new NumberExpression(lvalue.Evaluate(variableStore)), Operator, Right),
             NumberExpression lvalue => Right switch {
+                BinaryExpression rvalue => new BinaryExpression(lvalue, Operator, new NumberExpression(rvalue.Evaluate(variableStore))),
                 NumberExpression rvalue => Operator.Type switch {
-                    TokenType.Plus => new NumberExpression(lvalue.Value + rvalue.Value),
-                    TokenType.Minus => new NumberExpression(lvalue.Value - rvalue.Value),
-                    TokenType.Asterisk => new NumberExpression(lvalue.Value * rvalue.Value),
-                    TokenType.ForwardSlash => new NumberExpression(lvalue.Value / rvalue.Value),
-                    TokenType.Equal => new BoolExpression(lvalue.Value == rvalue.Value),
-                    TokenType.GreaterThan => new BoolExpression(lvalue.Value > rvalue.Value),
-                    TokenType.GreaterThanOrEqual => new BoolExpression(lvalue.Value >= rvalue.Value),
-                    TokenType.LessThan => new BoolExpression(lvalue.Value < rvalue.Value),
-                    TokenType.LessThanOrEqual => new BoolExpression(lvalue.Value <= rvalue.Value),
+                    TokenType.Plus => new NumberExpression(lvalue.ToDouble() + rvalue.ToDouble()),
+                    TokenType.Minus => new NumberExpression(lvalue.ToDouble() - rvalue.ToDouble()),
+                    TokenType.Asterisk => new NumberExpression(lvalue.ToDouble() * rvalue.ToDouble()),
+                    TokenType.ForwardSlash => new NumberExpression(lvalue.ToDouble() / rvalue.ToDouble()),
+                    TokenType.Equal => new BoolExpression(lvalue.ToDouble() == rvalue.ToDouble()),
+                    TokenType.GreaterThan => new BoolExpression(lvalue.ToDouble() > rvalue.ToDouble()),
+                    TokenType.GreaterThanOrEqual => new BoolExpression(lvalue.ToDouble() >= rvalue.ToDouble()),
+                    TokenType.LessThan => new BoolExpression(lvalue.ToDouble() < rvalue.ToDouble()),
+                    TokenType.LessThanOrEqual => new BoolExpression(lvalue.ToDouble() <= rvalue.ToDouble()),
                     _ => throw new Exception($"Invalid operator: {Operator.Lexeme}")
                 },
-                VariableExpression rvalue => Operator.Type switch {
-                    TokenType.Plus => new NumberExpression(lvalue.Value + rvalue.ToDouble(variableStore)),
-                    TokenType.Minus => new NumberExpression(lvalue.Value - rvalue.ToDouble(variableStore)),
-                    TokenType.Asterisk => new NumberExpression(lvalue.Value * rvalue.ToDouble(variableStore)),
-                    TokenType.ForwardSlash => new NumberExpression(lvalue.Value / rvalue.ToDouble(variableStore)),
-                    TokenType.Equal => new BoolExpression(lvalue.Value == rvalue.ToDouble(variableStore)),
-                    TokenType.GreaterThan => new BoolExpression(lvalue.Value > rvalue.ToDouble(variableStore)),
-                    TokenType.GreaterThanOrEqual => new BoolExpression(lvalue.Value >= rvalue.ToDouble(variableStore)),
-                    TokenType.LessThan => new BoolExpression(lvalue.Value < rvalue.ToDouble(variableStore)),
-                    TokenType.LessThanOrEqual => new BoolExpression(lvalue.Value <= rvalue.ToDouble(variableStore)),
+                IntegerVariableExpression rvalue => Operator.Type switch {
+                    TokenType.Plus => new NumberExpression(lvalue.ToDouble() + rvalue.ToInt(variableStore)),
+                    TokenType.Minus => new NumberExpression(lvalue.ToDouble() - rvalue.ToInt(variableStore)),
+                    TokenType.Asterisk => new NumberExpression(lvalue.ToDouble() * rvalue.ToInt(variableStore)),
+                    TokenType.ForwardSlash => new NumberExpression(lvalue.ToDouble() / rvalue.ToInt(variableStore)),
+                    TokenType.Equal => new BoolExpression(lvalue.ToDouble() == rvalue.ToInt(variableStore)),
+                    TokenType.GreaterThan => new BoolExpression(lvalue.ToDouble() > rvalue.ToInt(variableStore)),
+                    TokenType.GreaterThanOrEqual => new BoolExpression(lvalue.ToDouble() >= rvalue.ToInt(variableStore)),
+                    TokenType.LessThan => new BoolExpression(lvalue.ToDouble() < rvalue.ToInt(variableStore)),
+                    TokenType.LessThanOrEqual => new BoolExpression(lvalue.ToDouble() <= rvalue.ToInt(variableStore)),
+                    _ => throw new NotImplementedException()
+                },
+                DoubleVariableExpression rvalue => Operator.Type switch {
+                    TokenType.Plus => new NumberExpression(lvalue.ToDouble() + rvalue.ToDouble(variableStore)),
+                    TokenType.Minus => new NumberExpression(lvalue.ToDouble() - rvalue.ToDouble(variableStore)),
+                    TokenType.Asterisk => new NumberExpression(lvalue.ToDouble() * rvalue.ToDouble(variableStore)),
+                    TokenType.ForwardSlash => new NumberExpression(lvalue.ToDouble() / rvalue.ToDouble(variableStore)),
+                    TokenType.Equal => new BoolExpression(lvalue.ToDouble() == rvalue.ToDouble(variableStore)),
+                    TokenType.GreaterThan => new BoolExpression(lvalue.ToDouble() > rvalue.ToDouble(variableStore)),
+                    TokenType.GreaterThanOrEqual => new BoolExpression(lvalue.ToDouble() >= rvalue.ToDouble(variableStore)),
+                    TokenType.LessThan => new BoolExpression(lvalue.ToDouble() < rvalue.ToDouble(variableStore)),
+                    TokenType.LessThanOrEqual => new BoolExpression(lvalue.ToDouble() <= rvalue.ToDouble(variableStore)),
                     _ => throw new NotImplementedException()
                 },
                 _ => throw new Exception($"Invalid type: {Right}")
             },
-            VariableExpression lvalue => Right switch {
+            IntegerVariableExpression lvalue => Right switch {
+                BinaryExpression rvalue => new BinaryExpression(lvalue, Operator, new NumberExpression(rvalue.Evaluate(variableStore))),
                 NumberExpression rvalue => Operator.Type switch {
-                    TokenType.Plus => new NumberExpression(lvalue.ToDouble(variableStore) + rvalue.Value),
-                    TokenType.Minus => new NumberExpression(lvalue.ToDouble(variableStore) - rvalue.Value),
-                    TokenType.Asterisk => new NumberExpression(lvalue.ToDouble(variableStore) * rvalue.Value),
-                    TokenType.ForwardSlash => new NumberExpression(lvalue.ToDouble(variableStore) / rvalue.Value),
-                    TokenType.Equal => new BoolExpression(lvalue.ToDouble(variableStore) == rvalue.Value),
-                    TokenType.GreaterThan => new BoolExpression(lvalue.ToDouble(variableStore) > rvalue.Value),
-                    TokenType.GreaterThanOrEqual => new BoolExpression(lvalue.ToDouble(variableStore) >= rvalue.Value),
-                    TokenType.LessThan => new BoolExpression(lvalue.ToDouble(variableStore) < rvalue.Value),
-                    TokenType.LessThanOrEqual => new BoolExpression(lvalue.ToDouble(variableStore) <= rvalue.Value),
+                    TokenType.Plus => new NumberExpression(lvalue.ToInt(variableStore) + rvalue.ToInt()),
+                    TokenType.Minus => new NumberExpression(lvalue.ToInt(variableStore) - rvalue.ToInt()),
+                    TokenType.Asterisk => new NumberExpression(lvalue.ToInt(variableStore) * rvalue.ToInt()),
+                    TokenType.ForwardSlash => new NumberExpression(lvalue.ToInt(variableStore) / rvalue.ToInt()),
+                    TokenType.Equal => new BoolExpression(lvalue.ToInt(variableStore) == rvalue.ToInt()),
+                    TokenType.GreaterThan => new BoolExpression(lvalue.ToInt(variableStore) > rvalue.ToInt()),
+                    TokenType.GreaterThanOrEqual => new BoolExpression(lvalue.ToInt(variableStore) >= rvalue.ToInt()),
+                    TokenType.LessThan => new BoolExpression(lvalue.ToInt(variableStore) < rvalue.ToInt()),
+                    TokenType.LessThanOrEqual => new BoolExpression(lvalue.ToInt(variableStore) <= rvalue.ToInt()),
                     _ => throw new Exception($"Invalid operator: {Operator.Lexeme}")
                 },
-                VariableExpression rvalue => Operator.Type switch {
+                IntegerVariableExpression rvalue => Operator.Type switch {
+                    TokenType.Plus => new NumberExpression(lvalue.ToInt(variableStore) + rvalue.ToInt(variableStore)),
+                    TokenType.Minus => new NumberExpression(lvalue.ToInt(variableStore) - rvalue.ToInt(variableStore)),
+                    TokenType.Asterisk => new NumberExpression(lvalue.ToInt(variableStore) * rvalue.ToInt(variableStore)),
+                    TokenType.ForwardSlash => new NumberExpression(lvalue.ToInt(variableStore) / rvalue.ToInt(variableStore)),
+                    TokenType.Equal => new BoolExpression(lvalue.ToInt(variableStore) == rvalue.ToInt(variableStore)),
+                    TokenType.GreaterThan => new BoolExpression(lvalue.ToInt(variableStore) > rvalue.ToInt(variableStore)),
+                    TokenType.GreaterThanOrEqual => new BoolExpression(lvalue.ToInt(variableStore) >= rvalue.ToInt(variableStore)),
+                    TokenType.LessThan => new BoolExpression(lvalue.ToInt(variableStore) < rvalue.ToInt(variableStore)),
+                    TokenType.LessThanOrEqual => new BoolExpression(lvalue.ToInt(variableStore) <= rvalue.ToInt(variableStore)),
+                    _ => throw new Exception($"Invalid operator: {Operator.Lexeme}")
+                },
+                DoubleVariableExpression rvalue => Operator.Type switch {
+                    TokenType.Plus => new NumberExpression(lvalue.ToInt(variableStore) + rvalue.ToInt(variableStore)),
+                    TokenType.Minus => new NumberExpression(lvalue.ToInt(variableStore) - rvalue.ToInt(variableStore)),
+                    TokenType.Asterisk => new NumberExpression(lvalue.ToInt(variableStore) * rvalue.ToInt(variableStore)),
+                    TokenType.ForwardSlash => new NumberExpression(lvalue.ToInt(variableStore) / rvalue.ToInt(variableStore)),
+                    TokenType.Equal => new BoolExpression(lvalue.ToInt(variableStore) == rvalue.ToInt(variableStore)),
+                    TokenType.GreaterThan => new BoolExpression(lvalue.ToInt(variableStore) > rvalue.ToInt(variableStore)),
+                    TokenType.GreaterThanOrEqual => new BoolExpression(lvalue.ToInt(variableStore) >= rvalue.ToInt(variableStore)),
+                    TokenType.LessThan => new BoolExpression(lvalue.ToInt(variableStore) < rvalue.ToInt(variableStore)),
+                    TokenType.LessThanOrEqual => new BoolExpression(lvalue.ToInt(variableStore) <= rvalue.ToInt(variableStore)),
+                    _ => throw new Exception($"Invalid operator: {Operator.Lexeme}")
+                },
+                _ => throw new Exception($"Invalid type: {Right}")
+            },
+            DoubleVariableExpression lvalue => Right switch {
+                BinaryExpression rvalue => new BinaryExpression(lvalue, Operator, new NumberExpression(rvalue.Evaluate(variableStore))),
+                NumberExpression rvalue => Operator.Type switch {
+                    TokenType.Plus => new NumberExpression(lvalue.ToDouble(variableStore) + rvalue.ToDouble()),
+                    TokenType.Minus => new NumberExpression(lvalue.ToDouble(variableStore) - rvalue.ToDouble()),
+                    TokenType.Asterisk => new NumberExpression(lvalue.ToDouble(variableStore) * rvalue.ToDouble()),
+                    TokenType.ForwardSlash => new NumberExpression(lvalue.ToDouble(variableStore) / rvalue.ToDouble()),
+                    TokenType.Equal => new BoolExpression(lvalue.ToDouble(variableStore) == rvalue.ToDouble()),
+                    TokenType.GreaterThan => new BoolExpression(lvalue.ToDouble(variableStore) > rvalue.ToDouble()),
+                    TokenType.GreaterThanOrEqual => new BoolExpression(lvalue.ToDouble(variableStore) >= rvalue.ToDouble()),
+                    TokenType.LessThan => new BoolExpression(lvalue.ToDouble(variableStore) < rvalue.ToDouble()),
+                    TokenType.LessThanOrEqual => new BoolExpression(lvalue.ToDouble(variableStore) <= rvalue.ToDouble()),
+                    _ => throw new Exception($"Invalid operator: {Operator.Lexeme}")
+                },
+                IntegerVariableExpression rvalue => Operator.Type switch {
+                    TokenType.Plus => new NumberExpression(lvalue.ToDouble(variableStore) + rvalue.ToInt(variableStore)),
+                    TokenType.Minus => new NumberExpression(lvalue.ToDouble(variableStore) - rvalue.ToInt(variableStore)),
+                    TokenType.Asterisk => new NumberExpression(lvalue.ToDouble(variableStore) * rvalue.ToInt(variableStore)),
+                    TokenType.ForwardSlash => new NumberExpression(lvalue.ToDouble(variableStore) / rvalue.ToInt(variableStore)),
+                    TokenType.Equal => new BoolExpression(lvalue.ToDouble(variableStore) == rvalue.ToInt(variableStore)),
+                    TokenType.GreaterThan => new BoolExpression(lvalue.ToDouble(variableStore) > rvalue.ToInt(variableStore)),
+                    TokenType.GreaterThanOrEqual => new BoolExpression(lvalue.ToDouble(variableStore) >= rvalue.ToInt(variableStore)),
+                    TokenType.LessThan => new BoolExpression(lvalue.ToDouble(variableStore) < rvalue.ToInt(variableStore)),
+                    TokenType.LessThanOrEqual => new BoolExpression(lvalue.ToDouble(variableStore) <= rvalue.ToInt(variableStore)),
+                    _ => throw new Exception($"Invalid operator: {Operator.Lexeme}")
+                },
+                DoubleVariableExpression rvalue => Operator.Type switch {
                     TokenType.Plus => new NumberExpression(lvalue.ToDouble(variableStore) + rvalue.ToDouble(variableStore)),
                     TokenType.Minus => new NumberExpression(lvalue.ToDouble(variableStore) - rvalue.ToDouble(variableStore)),
                     TokenType.Asterisk => new NumberExpression(lvalue.ToDouble(variableStore) * rvalue.ToDouble(variableStore)),

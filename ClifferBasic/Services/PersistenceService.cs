@@ -21,20 +21,20 @@ internal class PersistenceService {
         _filePath = Path.Combine(clicalcDirectory, "program.bas");
     }
 
-    internal Dictionary<int, string> Load() {
+    internal Dictionary<int, string[]> Load() {
         try {
             if (File.Exists(_filePath)) {
                 var json = File.ReadAllText(_filePath);
-                return JsonSerializer.Deserialize<Dictionary<int, string>>(json) ?? new Dictionary<int, string>();
+                return JsonSerializer.Deserialize<Dictionary<int, string[]>>(json) ?? new Dictionary<int, string[]>();
             }
 
-            return new Dictionary<int, string>();
+            return new Dictionary<int, string[]>();
         }
         finally {
         }
     }
 
-    internal void Save(Dictionary<int, string> stack) {
+    internal void Save(Dictionary<int, string[]> stack) {
         try {
             var json = JsonSerializer.Serialize(stack);
             File.WriteAllText(_filePath, json);

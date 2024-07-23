@@ -75,4 +75,8 @@ public class DefaultReplContext : IReplContext {
     }
 
     public virtual string[] PreprocessArgs(string[] args, Command command, InvocationContext context) => args;
+
+    public virtual async Task<int> RunAsync(Command command, string[] args) {
+        return await command.RunAsync(args);
+    }
 }

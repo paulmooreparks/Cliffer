@@ -34,6 +34,9 @@ internal enum TokenType {
     Number,
     Boolean,
     VariableName,
+    StringVariableName,
+    IntegerVariableName,
+    DoubleVariableName,
     CommandName,
     Assignment,
     LeftParenthesis,
@@ -53,6 +56,10 @@ internal enum TokenType {
     DollarSign,
     Hash,
     BackTick,
+    And,
+    Or,
+    Not,
+    Xor,
     False,
     True
 }
