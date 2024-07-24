@@ -75,7 +75,7 @@ internal class Tokenizer {
     }
 
     private readonly Dictionary<string, TokenType> Keywords = new Dictionary<string, TokenType>() {
-        {"then", TokenType.CommandName},
+        {"then", TokenType.Keyword},
         {"goto", TokenType.CommandName},
         {"gosub", TokenType.CommandName},
         {"print", TokenType.CommandName},
@@ -103,8 +103,7 @@ internal class Tokenizer {
 
         while (CurrentChar != '\0') {
             if (Remaining.First() == '"' && Remaining.Last() == '"') {
-                Advance();
-                var lexeme = Remaining[..^1];
+                var lexeme = Remaining;
                 tokenList.Add(new Token(lexeme, TokenType.String, lexeme));
                 return tokenList;
             }
@@ -179,7 +178,9 @@ internal class Tokenizer {
                             tokenList.Add(new Token(CurrentString, TokenType.LessThan));
                         }
                         break;
+
                     default:
+                        tokenList.Add(new Token(CurrentString, TokenType.None));
                         break;
                 }
             }

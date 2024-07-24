@@ -43,8 +43,7 @@ internal class RunCommand {
                 var commandName = parseResult.CommandResult.Command.Name;
 
                 if (string.Equals("end", commandName)) {
-                    var command = new EndCommand();
-                    command.Execute(programService);
+                    await parseResult.CommandResult.Command.InvokeAsync([]);
                     return Result.Success;
                 }
 
@@ -54,6 +53,11 @@ internal class RunCommand {
                 }
 
                 var result = await parseResult.InvokeAsync();
+
+                if (result == Result.Error) {
+                    Console.Error.WriteLine($"Program terminated at line {programLine.LineNumber}");
+                    return result;
+                }
             }
             else {
                 Console.Error.WriteLine($"Invalid command: {programLine.ToString()}");

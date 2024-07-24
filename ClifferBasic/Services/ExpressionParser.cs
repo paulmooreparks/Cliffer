@@ -24,6 +24,7 @@ internal class ExpressionParser {
             _next = null;
         }
 
+
         return _current;
     }
 
@@ -165,10 +166,22 @@ internal class ExpressionParser {
             return new StringVariableExpression(literal);
         }
 
-        if (Peek?.Type == TokenType.CommandName) {
+        if (Peek?.Type == TokenType.Keyword) {
             var literal = Peek.Literal!.ToString()!;
             Advance();
-            return new CommandExpression(literal);
+            return new KeywordExpression(literal);
+        }
+
+        if (Peek?.Type == TokenType.CommandName) {
+            var args = new List<string>();
+
+            while (Peek != null) {
+                var arg = Peek.Literal!.ToString()!;
+                args.Add(arg);
+                Advance();
+            }
+
+            return new CommandExpression(args.ToArray());
         }
 
         if (Peek?.Type == TokenType.LeftParenthesis) {

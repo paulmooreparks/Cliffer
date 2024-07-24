@@ -15,7 +15,7 @@ internal class Token {
     }
 
     public override string ToString() {
-        return $"Type: {Type}, Lexeme: {Lexeme}";
+        return Lexeme;
     }
 }
 
@@ -57,5 +57,6 @@ internal enum TokenType {
     Xor,
     False,
     True,
+    Keyword,
     Unknown
 }

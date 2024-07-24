@@ -36,6 +36,10 @@ internal class NumberExpression : LiteralExpression<object> {
 
 internal class StringExpression : LiteralExpression<string> {
     internal StringExpression(string value) : base(value) { }
+
+    internal override object Evaluate(VariableStore variableStore) {
+        return Value.ToString()[1..^1];
+    }
 }
 
 internal class BooleanLiteralExpression : LiteralExpression<bool> {
@@ -71,7 +75,7 @@ internal class IntegerVariableExpression : VariableExpression {
 
     internal override object Evaluate(VariableStore variableStore) {
         var variable = variableStore.GetVariable(Name) as IntegerVariable;
-        return variable?.Value ?? throw new InvalidDataException($"Invalid type: {Name}");
+        return variable?.Value ?? throw new InvalidDataException($"Invalid integer variable: {Name}");
     }
 }
 
@@ -92,7 +96,7 @@ internal class DoubleVariableExpression : VariableExpression {
 
     internal override object Evaluate(VariableStore variableStore) {
         var variable = variableStore.GetVariable(Name) as DoubleVariable;
-        return variable?.Value ?? throw new InvalidDataException($"Invalid type: {Name}");
+        return variable?.Value ?? throw new InvalidDataException($"Invalid double variable: {Name}");
     }
 }
 
@@ -105,18 +109,35 @@ internal class StringVariableExpression : VariableExpression {
 
     internal override object Evaluate(VariableStore variableStore) {
         var variable = variableStore.GetVariable(Name) as StringVariable;
-        return variable?.Value ?? string.Empty;
+        return variable?.Value ?? throw new InvalidDataException($"Invalid string variable: {Name}");
     }
 }
 
-internal class CommandExpression : Expression {
-    string _command;
-    internal CommandExpression(string name) : base() { 
-        _command = name;
+internal class KeywordExpression : Expression {
+    internal string Keyword { get; }
+
+    internal KeywordExpression(string name) : base() {
+        Keyword = name;
     }
 
     internal override object Evaluate(VariableStore variableStore) {
-        return _command;
+        return Keyword;
+    }
+}
+
+internal class ThenExpression : KeywordExpression {
+    internal ThenExpression(string keyword) : base(keyword) { }
+}
+
+internal class CommandExpression : Expression {
+    internal string[] Args { get; }
+
+    internal CommandExpression(string[] args) : base() { 
+        Args = args;
+    }
+
+    internal override object Evaluate(VariableStore variableStore) {
+        return Args;
     }
 }
 

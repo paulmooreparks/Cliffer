@@ -23,7 +23,7 @@ internal class VariableStore {
             return value;
         }
 
-        throw new KeyNotFoundException($"Variable '{name}' not found.");
+        return null;
     }
 
     internal Dictionary<string, object> GetAllVariables() {
