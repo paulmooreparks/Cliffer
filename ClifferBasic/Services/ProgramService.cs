@@ -68,10 +68,48 @@ internal class ProgramService {
         }
     }
 
+    internal bool HasLine(int lineNumber) => Program.HasLine(lineNumber);
+
     internal void New() { 
         Program.New();
     }
 
     internal void Renumber() {
+    }
+
+    internal bool Reset(out ProgramLine? programLine) {
+        programLine = Program.Reset();
+        return programLine is not null;
+    }
+
+    internal bool Next(out ProgramLine programLine) {
+        var tmp = Program.Next();
+
+        if (tmp is not null) {
+            programLine = tmp.Value;
+            return true;
+        }
+
+        programLine = new();
+        return false;
+    }
+
+    internal void End() {
+        Program.End();
+    }
+
+    internal bool Goto(int lineNumber, out ProgramLine? programLine) {
+        programLine = Program.Goto(lineNumber);
+        return programLine is not null;
+    }
+
+    internal bool Gosub(int lineNumber, out ProgramLine? programLine) {
+        programLine = Program.Gosub(lineNumber);
+        return programLine is not null;
+    }
+
+    internal bool Return(out ProgramLine? programLine) {
+        programLine = Program.Return();
+        return programLine is not null;
     }
 }
