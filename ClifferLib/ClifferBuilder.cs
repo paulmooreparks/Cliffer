@@ -488,6 +488,19 @@ public class ClifferBuilder : IClifferBuilder {
                 }
                 else if (symbol is Argument argument) {
                     value = invocationContext.ParseResult.GetValueForArgument(argument);
+
+#if false
+                    if (param.ParameterType.IsGenericType && param.ParameterType.GetGenericTypeDefinition() == typeof(Nullable<>) && value is not null) {
+                        var underlyingType = Nullable.GetUnderlyingType(param.ParameterType);
+
+                        if (value is not null && underlyingType is not null) {
+                            value = Convert.ChangeType(invocationContext.ParseResult.GetValueForArgument(argument), underlyingType);
+                            var nullableType = typeof(Nullable<>).MakeGenericType(underlyingType);
+                            var nullableInstance = Activator.CreateInstance(nullableType, new object[] { });
+                            // value = Activator.CreateInstance(param.ParameterType, new object?[] { value });
+                        }
+                    }
+#endif
                 }
                 else {
                     // If the child is neither, then get an instance of the type from the service container (dependency injection)
@@ -523,6 +536,17 @@ public class ClifferBuilder : IClifferBuilder {
 
             return 0;
         });
+    }
+
+    private static object? ConvertToType(object value, Type targetType) {
+        // Use reflection to convert value to the target type
+        MethodInfo? method = typeof(ClifferBuilder).GetMethod("ConvertToGeneric", BindingFlags.Static | BindingFlags.NonPublic);
+        MethodInfo? generic = method?.MakeGenericMethod(targetType);
+        return generic?.Invoke(null, new object[] { value });
+    }
+
+    private static T ConvertToGeneric<T>(object value) {
+        return (T)value;
     }
 
     public IClifferBuilder ConfigureCommands(Action<IConfiguration, RootCommand> configureCommands) {

@@ -18,7 +18,7 @@ internal class VariableStore {
         return value;
     }
 
-    internal object GetVariable(string name) {
+    internal object? GetVariable(string name) {
         if (_variables.TryGetValue(name, out object? value)) {
             return value;
         }

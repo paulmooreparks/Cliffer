@@ -23,6 +23,12 @@ internal class ExpressionBuilder {
         return expression;
     }
 
+    internal Expression? BuildExpression(string arg) {
+        var tokens = _tokenizer.Tokenize(arg);
+        var expression = _expressionParser.Parse(tokens);
+        return expression;
+    }
+
     internal Expression? BuildExpression() {
         var expression = _expressionParser.Parse();
         return expression;

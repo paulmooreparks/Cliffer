@@ -58,7 +58,7 @@ internal class VariableExpression : Expression {
     }
 
     internal override object Evaluate(VariableStore variableStore) {
-        return variableStore.GetVariable(Name);
+        return variableStore.GetVariable(Name) ?? false;
     }
 }
 
@@ -104,7 +104,7 @@ internal class StringVariableExpression : VariableExpression {
     internal StringVariableExpression(string name) : base(name) { }
 
     internal string ToString(VariableStore variableStore) {
-        return variableStore.GetVariable(Name).ToString() ?? string.Empty;
+        return variableStore.GetVariable(Name)?.ToString() ?? string.Empty;
     }
 
     internal override object Evaluate(VariableStore variableStore) {
