@@ -8,12 +8,12 @@ internal class ClifferBasic {
     static async Task<int> Main(string[] args) {
         var cli = new ClifferBuilder()
             .ConfigureServices(services => {
-                services.AddSingleton<VariableStore>();
-                services.AddSingleton<Tokenizer>();
-                services.AddSingleton<ExpressionParser>();
-                services.AddSingleton<ExpressionBuilder>();
-                services.AddSingleton<ProgramService>();
+                services.AddTransient<Tokenizer>();
+                services.AddTransient<ExpressionParser>();
+                services.AddTransient<ExpressionBuilder>();
                 services.AddSingleton<CommandSplitter>();
+                services.AddSingleton<VariableStore>();
+                services.AddSingleton<ProgramService>();
             })
             .Build();
 

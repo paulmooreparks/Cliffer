@@ -47,6 +47,14 @@ internal class ExpressionParser {
         return Expression();
     }
 
+    internal Expression? Parse() {
+        if (Peek is null) {
+            return null;
+        }
+
+        return Expression();
+    }
+
     internal Expression Expression() {
         return Equality();
     }
@@ -67,7 +75,9 @@ internal class ExpressionParser {
     internal Expression Comparison() {
         Expression expr = Term();
 
-        while (Peek?.Type == TokenType.GreaterThan || Peek?.Type == TokenType.GreaterThanOrEqual || Peek?.Type == TokenType.LessThan || Peek?.Type == TokenType.LessThanOrEqual) {
+        while (Peek?.Type == TokenType.GreaterThan || Peek?.Type == TokenType.GreaterThanOrEqual || 
+            Peek?.Type == TokenType.LessThan || Peek?.Type == TokenType.LessThanOrEqual) 
+        {
             Token op = Peek;
             Advance();
             Expression right = Term();
@@ -111,14 +121,8 @@ internal class ExpressionParser {
             return new UnaryExpression(op, right);
         };
 
-        return Call();
+        return Primary();
     }
-
-    internal Expression Call() {
-        Expression expr = Primary();
-        return expr;
-    }
-
 
     internal Expression Primary() {
         if (Peek?.Type == TokenType.False) {
@@ -164,7 +168,7 @@ internal class ExpressionParser {
         if (Peek?.Type == TokenType.CommandName) {
             var literal = Peek.Literal!.ToString()!;
             Advance();
-            return new StringVariableExpression(literal);
+            return new CommandExpression(literal);
         }
 
         if (Peek?.Type == TokenType.LeftParenthesis) {

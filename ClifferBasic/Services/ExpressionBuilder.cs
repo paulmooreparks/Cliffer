@@ -22,4 +22,9 @@ internal class ExpressionBuilder {
         var expression = _expressionParser.Parse(tokens);
         return expression;
     }
+
+    internal Expression? BuildExpression() {
+        var expression = _expressionParser.Parse();
+        return expression;
+    }
 }
