@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.CommandLine;
-using System.CommandLine.NamingConventionBinder;
+﻿using System.CommandLine;
 using Microsoft.Extensions.Configuration;
 using System.CommandLine.Parsing;
 

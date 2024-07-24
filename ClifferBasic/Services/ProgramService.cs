@@ -1,20 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
-
-using Cliffer;
-
-using ClifferBasic.Model;
+﻿using ClifferBasic.Model;
 
 namespace ClifferBasic.Services;
 
 internal class ProgramService {
     private string _filePath = string.Empty;
 
-    internal ProgramModel Program { get; }
+    private ProgramModel Program { get; }
 
     public ProgramService(CommandSplitter splitter) {
         Program = new ProgramModel(splitter);
@@ -70,11 +61,16 @@ internal class ProgramService {
 
     internal bool HasLine(int lineNumber) => Program.HasLine(lineNumber);
 
-    internal void New() { 
+    internal void New() {
         Program.New();
     }
 
     internal void Renumber() {
+    }
+
+    internal bool Reset() {
+        var _ = Program.Reset();
+        return _ != null;
     }
 
     internal bool Reset(out ProgramLine? programLine) {
@@ -111,5 +107,17 @@ internal class ProgramService {
     internal bool Return(out ProgramLine? programLine) {
         programLine = Program.Return();
         return programLine is not null;
+    }
+
+    internal void SetLine(int lineNumber, string[] tokens) {
+        Program.SetLine(lineNumber, tokens);
+    }
+
+    internal string GetLine(int lineNumber) {
+        return Program.GetLine(lineNumber);
+    }
+
+    internal void RemoveLine(int lineNumber) {
+        Program.RemoveLine(lineNumber);
     }
 }

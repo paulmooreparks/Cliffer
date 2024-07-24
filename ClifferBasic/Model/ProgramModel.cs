@@ -1,13 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.CommandLine.Parsing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using Cliffer;
-
-using ClifferBasic.Services;
+﻿using ClifferBasic.Services;
 
 namespace ClifferBasic.Model;
 internal class ProgramModel {

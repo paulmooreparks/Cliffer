@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.CommandLine;
+﻿using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 using Cliffer;
 using ClifferBasic.Services;
@@ -38,7 +33,7 @@ internal class RunCommand {
             programService.Load(filename);
         }
 
-        programService.Program.Reset();
+        programService.Reset();
 
         while (programService.Next(out var programLine)) {
             var tokens = programLine.Tokens;
@@ -65,33 +60,6 @@ internal class RunCommand {
                 return Result.Error;
             }
         }
-
-#if false
-        foreach (var line in programService.Program.Listing) {
-            var tokens = splitter.Split(line).ToArray();
-            
-            var parseResult = context.Parser.Parse(tokens.Skip(1).ToArray());
-
-            if (parseResult != null) {
-                var commandName = parseResult.CommandResult.Command.Name;
-
-                if (string.Equals("end", commandName)) {
-                    return Result.Success;
-                }
-
-                if (_illegalCommands.Contains(commandName)) {
-                    Console.Error.WriteLine($"Illegal command: {commandName}");
-                    return Result.Error;
-                }
-
-                var result = await parseResult.InvokeAsync();
-            }
-            else {
-                Console.Error.WriteLine($"Invalid command: {line}");
-                return Result.Error;
-            }
-        }
-#endif
 
         return Result.Success;
     }

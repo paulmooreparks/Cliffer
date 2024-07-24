@@ -1,6 +1,4 @@
-﻿using System;
-using System.CommandLine;
-
+﻿using System.CommandLine;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 

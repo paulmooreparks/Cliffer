@@ -1,12 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using Cliffer;
-
+﻿using Cliffer;
 using ClifferBasic.Services;
 
 namespace ClifferBasic.Commands;
@@ -18,8 +10,10 @@ internal class ListCommand {
             return Result.Error;
         }
 
-        foreach (var line in programService.Program.Listing) {
-            Console.WriteLine(line);
+        programService.Reset();
+
+        while (programService.Next(out var programLine)) {
+            Console.WriteLine(programLine);
         }
 
         return Result.Success;

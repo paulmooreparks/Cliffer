@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace ClifferBasic.Model;
+﻿namespace ClifferBasic.Model;
 
 internal class Variable {
     internal Type Type { get; }

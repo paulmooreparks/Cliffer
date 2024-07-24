@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace ClifferBasic.Model;
 
-namespace ClifferBasic.Model;
 internal class Token {
     internal string Lexeme { get; set; }
     internal TokenType Type { get; set; }
