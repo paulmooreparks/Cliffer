@@ -12,14 +12,14 @@ ClifferBasic is a sample program for the Cliffer CLI library that implements a v
 
 ## Commands
 
-### `cls`
+### cls
 Clear the screen
 
 ```basic
 > cls
 ```
 
-### `delete`
+### delete
 Delete a line from a program
 
 ```basic
@@ -46,6 +46,26 @@ End the execution of a program
 A bit
 ```
 
+### for
+Repeat a section of code for a number of times
+
+```basic
+> 10 for i = 1 to 10
+> 20 print i
+> 30 next i
+> run
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+```
+
 ### gosub
 Jump to a subroutine
 
@@ -63,7 +83,7 @@ Jump to a subroutine
 625
 ```
 
-### `goto`
+### goto
 Jump to a line and continue execution
 
 ```basic
@@ -82,7 +102,7 @@ Jump to a line and continue execution
 625
 ```
 
-### `if`
+### if
 Take an action conditionally based on a Boolean evaluation
 
 ```basic
@@ -93,7 +113,7 @@ All is well
 All is well again
 ```
 
-### `let`
+### let
 Assign a value to a variable.
 ```basic
 > let x = 5.5
@@ -107,7 +127,7 @@ Assign a value to a variable.
 foo
 ```
 
-### `list`
+### list
 List the current program in memory.
 ```basic
 > 10 print "Hello, World!"
@@ -117,7 +137,7 @@ List the current program in memory.
 20 end
 ```
 
-### `load`
+### load
 Load a program from persistent storage.
 
 ```basic
@@ -129,7 +149,7 @@ Load a program from persistent storage.
 Hello, World!
 ```
 
-### `new`
+### new
 Clear the current program from memory
 
 ```basic
@@ -142,7 +162,27 @@ Hello, World!
 >
 ```
 
-### `print`
+### next
+Return to the start of a for loop
+
+```basic
+> 10 for i = 1 to 10
+> 20 print i
+> 30 next i
+> run
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+```
+x
+### print
 Print text to the screen or evaluate an expression.
 ```basic
 > print "Hello, World!"
@@ -153,7 +193,7 @@ Hello, World!
 foo
 ```
 
-### `rem`
+### rem
 Add a comment to the program.
 
 ```basic
@@ -163,7 +203,7 @@ Add a comment to the program.
 This is a command
 ```
 
-### `return`
+### return
 Return from a subroutine
 
 ```basic
@@ -180,7 +220,7 @@ Return from a subroutine
 625
 ```
 
-### `run`
+### run
 Run the program currently in memory.
 
 ```basic
@@ -190,7 +230,7 @@ Run the program currently in memory.
 Hello, World!
 ```
 
-### `save`
+### save
 Save the current program to persistent storage.
 ```basic
 > 10 print "Hello, World!"

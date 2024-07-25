@@ -11,7 +11,7 @@ using ClifferBasic.Model;
 using ClifferBasic.Services;
 
 namespace ClifferBasic.Commands;
-[Command("next", "Repeat a section of code for a number of times")]
+[Command("next", "Return to the start of a for loop")]
 [Argument(typeof(string), "identifier", "The variable name indicating which for loop to continue", Arity = Cliffer.ArgumentArity.ExactlyOne)]
 internal class NextCommand {
     public int Execute(
