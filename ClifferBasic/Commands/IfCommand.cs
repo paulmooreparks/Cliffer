@@ -49,33 +49,3 @@ internal class IfCommand {
         return Result.Success; 
     }
 }
-
-#if false
-                        var result = expression.Evaluate(variableStore);
-                        Console.WriteLine(result);
-
-
-            if (parseResult != null) {
-                var commandName = parseResult.CommandResult.Command.Name;
-
-                if (string.Equals("end", commandName)) {
-                    await parseResult.CommandResult.Command.InvokeAsync([]);
-                    // var command = new EndCommand();
-                    // command.Execute(programService);
-                    return Result.Success;
-                }
-            }
-#endif
-
-#if false
-                    var parseResult = context.Parser.Parse(args.ToArray());
-
-                    if (parseResult != null) {
-                        var command = parseResult.CommandResult.Command;
-                        var commandName = command.Name;
-
-                        if (string.Equals("end", commandName)) {
-                            await command.InvokeAsync([]);
-                        }
-                    }
-#endif

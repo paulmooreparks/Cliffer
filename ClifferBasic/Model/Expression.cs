@@ -129,6 +129,14 @@ internal class ThenExpression : KeywordExpression {
     internal ThenExpression(string keyword) : base(keyword) { }
 }
 
+internal class ToExpression : KeywordExpression {
+    internal ToExpression(string keyword) : base(keyword) { }
+}
+
+internal class StepExpression : KeywordExpression {
+    internal StepExpression(string keyword) : base(keyword) { }
+}
+
 internal class CommandExpression : Expression {
     internal string[] Args { get; }
 

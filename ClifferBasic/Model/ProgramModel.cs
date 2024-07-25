@@ -1,11 +1,13 @@
 ﻿using ClifferBasic.Services;
 
 namespace ClifferBasic.Model;
+
 internal class ProgramModel {
     private LinkedList<ProgramLine> _lines = new ();
     private SortedDictionary<int, LinkedListNode<ProgramLine>> _lineIndex = new ();
     private readonly CommandSplitter _splitter;
     private Stack<int> _returnStack = new();
+    private Dictionary<string, ForLoopState> _forMap = new();
     private LinkedListNode<ProgramLine>? Pointer { get; set; }
     private LinkedListNode<ProgramLine>? Current { get; set; }
 
@@ -181,6 +183,52 @@ internal class ProgramModel {
 
         return null;
     }
+
+    internal bool EnterForLoop(string identifier) {
+        _forMap.Remove(identifier);
+
+        if (Current is not null) {
+            int lineNumber = Current.Value.LineNumber;
+            _forMap.Add(identifier, new ForLoopState(identifier, lineNumber));
+            return true;
+        }
+
+        return false;
+    }
+
+    internal bool ContinueForLoop(string identifier) {
+        if (_forMap.TryGetValue(identifier, out var state)) {
+            if (Current is not null) {
+                if (Current.Next is null) {
+                    state.EndLineNumber = int.MaxValue;
+                }
+                else {
+                    state.EndLineNumber = Current.Next.Value.LineNumber;
+                }
+
+                Goto(state.StartLineNumber);
+                return true;
+            }
+        }
+
+        return false;
+    }
+    internal bool ExitForLoop(string identifier) {
+        if (_forMap.TryGetValue(identifier, out var state)) {
+            _forMap.Remove(identifier);
+            return true;
+        }
+
+        return false;
+    }
+
+    internal bool IsForLoopActive(string identifier) {
+        if (_forMap.TryGetValue(identifier, out var state)) {
+            return state.IsActive;
+        }
+
+        return false;
+    }
 }
 
 internal struct ProgramLine {
@@ -192,3 +240,17 @@ internal struct ProgramLine {
         return $"{LineNumber} {line}";
     }
 }
+
+internal class ForLoopState {
+    public string Identifier { get; set; }
+    internal int StartLineNumber { get; set; }
+    internal int EndLineNumber { get; set; } = int.MaxValue;
+    internal bool IsActive { get; set; }
+
+    public ForLoopState(string identifier, int lineNumber) {
+        Identifier = identifier;
+        StartLineNumber = lineNumber;
+        IsActive = true;
+    }
+}
+

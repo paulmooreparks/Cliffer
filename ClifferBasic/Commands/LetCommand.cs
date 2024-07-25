@@ -10,9 +10,8 @@ internal class LetCommand {
     public int Execute(
         IEnumerable<string> args,
         ExpressionBuilder expressionBuilder,
-        VariableStore variableStore
-        ) 
-    {
+        VariableStore variableStore) {
+
         if (args.Count() == 0) {
             Console.Error.WriteLine("Error: No parameters");
             return Result.Error;

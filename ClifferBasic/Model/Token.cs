@@ -58,6 +58,8 @@ internal enum TokenType {
     False,
     True,
     Then,
+    To,
+    Step,
     Keyword,
     Unknown
 }

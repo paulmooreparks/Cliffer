@@ -15,13 +15,12 @@ internal class RunCommand {
         "bye", 
         "del",
         "delete",
+        "exit",
         "goodbye",
         "list", 
-        "load", 
         "new", 
         "renumber", 
         "run", 
-        "save" 
     };
 
     public RunCommand() { 

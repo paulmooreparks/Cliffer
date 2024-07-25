@@ -120,4 +120,20 @@ internal class ProgramService {
     internal void RemoveLine(int lineNumber) {
         Program.RemoveLine(lineNumber);
     }
+
+    internal bool EnterForLoop(string identifier) {
+        return Program.EnterForLoop(identifier);
+    }
+
+    internal bool ContinueForLoop(string identifier) {
+        return Program.ContinueForLoop(identifier);
+    }
+
+    internal bool ExitForLoop(string identifier) {
+        return Program.ExitForLoop(identifier);
+    }
+
+    internal bool IsForLoopActive(string identifier) {
+        return Program.IsForLoopActive(identifier);
+    }
 }

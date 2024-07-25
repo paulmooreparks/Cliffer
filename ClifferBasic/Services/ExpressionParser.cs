@@ -172,6 +172,18 @@ internal class ExpressionParser {
             return new ThenExpression(literal);
         }
 
+        if (Peek?.Type == TokenType.To) {
+            var literal = Peek.Literal!.ToString()!;
+            Advance();
+            return new ToExpression(literal);
+        }
+
+        if (Peek?.Type == TokenType.Step) {
+            var literal = Peek.Literal!.ToString()!;
+            Advance();
+            return new StepExpression(literal);
+        }
+
         if (Peek?.Type == TokenType.Keyword) {
             var literal = Peek.Literal!.ToString()!;
             Advance();
