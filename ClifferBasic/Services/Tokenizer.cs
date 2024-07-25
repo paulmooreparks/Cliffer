@@ -75,7 +75,7 @@ internal class Tokenizer {
     }
 
     private readonly Dictionary<string, TokenType> Keywords = new Dictionary<string, TokenType>() {
-        {"then", TokenType.Keyword},
+        {"then", TokenType.Then},
         {"goto", TokenType.CommandName},
         {"gosub", TokenType.CommandName},
         {"print", TokenType.CommandName},

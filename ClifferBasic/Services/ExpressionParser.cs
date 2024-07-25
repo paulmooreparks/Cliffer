@@ -166,6 +166,12 @@ internal class ExpressionParser {
             return new StringVariableExpression(literal);
         }
 
+        if (Peek?.Type == TokenType.Then) {
+            var literal = Peek.Literal!.ToString()!;
+            Advance();
+            return new ThenExpression(literal);
+        }
+
         if (Peek?.Type == TokenType.Keyword) {
             var literal = Peek.Literal!.ToString()!;
             Advance();

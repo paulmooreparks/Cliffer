@@ -490,6 +490,9 @@ public class ClifferBuilder : IClifferBuilder {
                     value = invocationContext.ParseResult.GetValueForArgument(argument);
 
 #if false
+                    /* Nullable types still aren't supported as parameters because I'm still trying to figure out 
+                    how to pass them. If anyone has any ideas here, please let me know. */
+
                     if (param.ParameterType.IsGenericType && param.ParameterType.GetGenericTypeDefinition() == typeof(Nullable<>) && value is not null) {
                         var underlyingType = Nullable.GetUnderlyingType(param.ParameterType);
 

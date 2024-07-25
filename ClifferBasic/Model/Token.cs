@@ -57,6 +57,7 @@ internal enum TokenType {
     Xor,
     False,
     True,
+    Then,
     Keyword,
     Unknown
 }

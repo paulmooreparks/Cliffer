@@ -6,7 +6,13 @@ namespace ClifferBasic.Commands;
 [Command("load", "Load a program from persistent storage")]
 [Argument(typeof(string), "filename", "The name of the file to load into memory", arity: ArgumentArity.ExactlyOne)]
 internal class LoadCommand {
-    public int Execute(string filename, ExpressionBuilder expressionBuilder, VariableStore variableStore, ProgramService programService) {
+    public int Execute(
+        string filename,
+        ExpressionBuilder expressionBuilder,
+        VariableStore variableStore,
+        ProgramService programService
+        ) 
+    {
         var expression = expressionBuilder.BuildExpression(filename);
 
         try {
