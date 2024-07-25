@@ -173,15 +173,19 @@ internal class ExpressionParser {
         }
 
         if (Peek?.Type == TokenType.To) {
-            var literal = Peek.Literal!.ToString()!;
+            var keyword = Peek.Literal!.ToString()!;
             Advance();
-            return new ToExpression(literal);
+            double toValue = Convert.ToDouble(Peek.Literal);
+            Advance();
+            return new ToExpression(keyword, toValue);
         }
 
         if (Peek?.Type == TokenType.Step) {
-            var literal = Peek.Literal!.ToString()!;
+            var keyword = Peek.Literal!.ToString()!;
             Advance();
-            return new StepExpression(literal);
+            double stepValue = Convert.ToDouble(Peek.Literal);
+            Advance();
+            return new StepExpression(keyword, stepValue);
         }
 
         if (Peek?.Type == TokenType.Keyword) {

@@ -149,6 +149,10 @@ internal class ProgramModel {
             Pointer = _lineIndex[lineNumber];
             return Pointer?.Value;
         }
+        else if (lineNumber == int.MaxValue) {
+            End();
+            return new ProgramLine();
+        }
 
         return null;
     }
@@ -172,13 +176,7 @@ internal class ProgramModel {
     internal ProgramLine? Return() {
         if (_returnStack.Any()) {
             int lineNumber = _returnStack.Pop();
-
-            if (HasLine(lineNumber)) {
-                return Goto(lineNumber);
-            }
-
-            End();
-            return new ProgramLine();
+            return Goto(lineNumber);
         }
 
         return null;
@@ -216,6 +214,7 @@ internal class ProgramModel {
     internal bool ExitForLoop(string identifier) {
         if (_forMap.TryGetValue(identifier, out var state)) {
             _forMap.Remove(identifier);
+            Goto(state.EndLineNumber);
             return true;
         }
 

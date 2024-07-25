@@ -130,11 +130,17 @@ internal class ThenExpression : KeywordExpression {
 }
 
 internal class ToExpression : KeywordExpression {
-    internal ToExpression(string keyword) : base(keyword) { }
+    internal double ToValue { get; }
+    internal ToExpression(string keyword, double toValue) : base(keyword) {
+        ToValue = toValue;
+    }
 }
 
 internal class StepExpression : KeywordExpression {
-    internal StepExpression(string keyword) : base(keyword) { }
+    internal double StepValue { get; }
+    internal StepExpression(string keyword, double stepValue) : base(keyword) { 
+        StepValue = stepValue;
+    }
 }
 
 internal class CommandExpression : Expression {

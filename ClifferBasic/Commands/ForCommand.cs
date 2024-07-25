@@ -56,59 +56,44 @@ internal class ForCommand {
 
             expression = expressionBuilder.BuildExpression();
 
-            if (expression is ToExpression) {
+            if (expression is ToExpression toExpression) {
+                var comparisonResult = toExpression.ToValue;
+                double incrementAmount = 1;
+                double incrementValue = 0;
+
+                var loopVarValue = variableStore.GetVariable(identifier);
+
+                if (loopVarValue is DoubleVariable doubleVariable) {
+                    incrementValue = doubleVariable.ToDouble();
+                }
+                else if (loopVarValue is IntegerVariable integerVariable) {
+                    incrementValue = integerVariable.ToInt();
+                }
+                else {
+                    Console.Error.WriteLine($"Error: Invalid variable type");
+                    return Result.Error;
+                }
+
+                double comparisonValue = (double)comparisonResult;
+
                 expression = expressionBuilder.BuildExpression();
 
-                if (expression is not null) {
-                    double incrementAmount = 1;
-                    double incrementValue = 0;
+                if (expression is StepExpression stepExpression) {
+                    var step = stepExpression.StepValue;
+                    incrementAmount = step;
+                }
 
-                    var loopVarValue = variableStore.GetVariable(identifier);
+                incrementValue += incrementAmount;
+                variableStore.SetVariable(identifier, new DoubleVariable(incrementValue));
 
-                    if (loopVarValue is DoubleVariable doubleVariable) {
-                        incrementValue = doubleVariable.ToDouble();
+                if (incrementAmount > 0) {
+                    if (incrementValue.CompareTo(comparisonValue) == 1) {
+                        programService.ExitForLoop(identifier);
                     }
-                    else if (loopVarValue is IntegerVariable integerVariable) {
-                        incrementValue = integerVariable.ToInt();
-                    }
-                    else {
-                        Console.Error.WriteLine($"Error: Invalid variable type");
-                        return Result.Error;
-                    }
-
-                    var comparisonResult = expression.Evaluate(variableStore);
-                    double comparisonValue = (double)comparisonResult;
-
-                    expression = expressionBuilder.BuildExpression();
-
-                    if (expression is StepExpression) {
-                        expression = expressionBuilder.BuildExpression();
-
-                        if (expression is not null) {
-                            var step = expression.Evaluate(variableStore);
-                            
-                            if (step is not null) {
-                                incrementAmount = (double)step;
-                            }
-                        }
-                        else {
-                            Console.Error.WriteLine($"Error: Missing step value");
-                            return Result.Error;
-                        }
-                    }
-
-                    incrementValue += incrementAmount;
-                    variableStore.SetVariable(identifier, new DoubleVariable(incrementValue));
-
-                    if (incrementAmount > 0) {
-                        if (incrementValue.CompareTo(comparisonValue) >= 0) {
-                            programService.ExitForLoop(identifier);
-                        }
-                    }
-                    else if (incrementAmount < 0) {
-                        if (incrementValue.CompareTo(comparisonValue) <= 0) {
-                            programService.ExitForLoop(identifier);
-                        }
+                }
+                else if (incrementAmount < 0) {
+                    if (incrementValue.CompareTo(comparisonValue) == -1) {
+                        programService.ExitForLoop(identifier);
                     }
                 }
             }
