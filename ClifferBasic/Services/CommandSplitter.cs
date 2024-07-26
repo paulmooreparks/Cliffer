@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using DIAttrib;
 
 namespace ClifferBasic.Services;
 
+[DISingleton(typeof(CommandSplitter))]
 internal class CommandSplitter {
     public CommandSplitter() {
     }

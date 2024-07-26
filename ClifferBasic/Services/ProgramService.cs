@@ -1,7 +1,10 @@
 ﻿using ClifferBasic.Model;
 
+using DIAttrib;
+
 namespace ClifferBasic.Services;
 
+[DISingleton(typeof(ProgramService))]
 internal class ProgramService {
     private string _filePath = string.Empty;
 
@@ -9,13 +12,6 @@ internal class ProgramService {
 
     public ProgramService(CommandSplitter splitter) {
         Program = new ProgramModel(splitter);
-        var homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        Directory.SetCurrentDirectory(homeDirectory);
-        var cliBasicDirectory = Path.Combine(homeDirectory, ".clibasic");
-
-        if (!Directory.Exists(cliBasicDirectory)) {
-            Directory.CreateDirectory(cliBasicDirectory);
-        }
     }
 
     internal ProgramModel Load(string filename) {

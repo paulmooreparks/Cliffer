@@ -8,7 +8,7 @@
         <Authors>Paul M. Parks</Authors>
         <Description>A library to simplify the authoring of CLI applications with System.CommandLine.</Description>
         <Copyright>Copyright (c) 2024, Paul M. Parks</Copyright>
-        <Version>0.4.2-prerelease</Version>
+        <Version>0.4.3-prerelease</Version>
         <SignAssembly>True</SignAssembly>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <Title>Cliffer CLI Library</Title>
@@ -18,6 +18,8 @@
         <RepositoryUrl>https://github.com/paulmooreparks/Cliffer</RepositoryUrl>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <NoWarn>$(NoWarn);1591</NoWarn>
+        <PackageProjectUrl>https://github.com/paulmooreparks/Cliffer</PackageProjectUrl>
+        <PackageTags>cli</PackageTags>
     </PropertyGroup>
 
     <ItemGroup>

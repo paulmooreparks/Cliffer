@@ -6,7 +6,11 @@ using System.Threading.Tasks;
 
 using ClifferBasic.Model;
 
+using DIAttrib;
+
 namespace ClifferBasic.Services;
+
+[DISingleton(typeof(VariableStore))]
 internal class VariableStore {
     private readonly Dictionary<string, object> _variables = new();
 

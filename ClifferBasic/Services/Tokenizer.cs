@@ -1,7 +1,11 @@
 ﻿using System.Globalization;
 using ClifferBasic.Model;
 
+using DIAttrib;
+
 namespace ClifferBasic.Services;
+
+[DITransient(typeof(Tokenizer))]
 internal class Tokenizer {
     public Tokenizer() { }
 

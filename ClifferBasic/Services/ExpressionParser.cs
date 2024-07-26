@@ -1,7 +1,10 @@
 ﻿using ClifferBasic.Model;
 
+using DIAttrib;
+
 namespace ClifferBasic.Services;
 
+[DITransient(typeof(ExpressionParser))]
 internal class ExpressionParser {
     private IEnumerator<Token> _tokens = new List<Token>().GetEnumerator();
     private Token? _next;

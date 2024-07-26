@@ -1,7 +1,10 @@
 ﻿using ClifferBasic.Model;
 
+using DIAttrib;
+
 namespace ClifferBasic.Services;
 
+[DITransient(typeof(ExpressionBuilder))]
 internal class ExpressionBuilder {
     Tokenizer _tokenizer;
     ExpressionParser _expressionParser;
