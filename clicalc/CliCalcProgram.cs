@@ -20,7 +20,7 @@ internal class CliCalcProgram {
 
         Utility.SetServiceProvider(cli.ServiceProvider);
 
-        ClifferExitHandler.OnExit += () => {
+        ClifferEventHandler.OnExit += () => {
             var stack = Utility.GetService<Stack<double>>()!;
             var persistenceService = Utility.GetService<StackPersistenceService>()!;
             persistenceService.SaveStack(stack);
