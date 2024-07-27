@@ -59,7 +59,7 @@ Note that macros can be defined in the configuration file as well as in code, an
 There are three demo applications to demonstrate the features and capabilities of Cliffer:
 
 * [CliCalc](CliCalc) - A stack calculator implemented as a REPL (read/eval/print loop).
-* [ClifferBasic](ClifferBasic) - A BASIC interpreter in a REPL environment, like the old Commodore 64 or Apple ][ or TI-99/4A that so many of us grew up with.
+* [ClifferBasic](https://github.com/paulmooreparks/ClifferBasic) - A BASIC interpreter in a REPL environment, like the old Commodore 64 or Apple ][ or TI-99/4A that so many of us grew up with.
 * [ClifferDemo](ClifferDemo) - A walkthrough of various Cliffer features.
 
 Unfortunately, these are all in various stages of being built, but feel free to explore them or even add to them.
