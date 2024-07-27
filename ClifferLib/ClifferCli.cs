@@ -33,7 +33,7 @@ internal class ClifferCli : IClifferCli {
             return result;
         }
         finally {
-            ClifferExitHandler.Exit(result);
+            ClifferEventHandler.Exit(result);
         }
     }
 }

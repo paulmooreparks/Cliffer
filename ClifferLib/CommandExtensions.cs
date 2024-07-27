@@ -18,6 +18,7 @@ public static class CommandExtensions {
             return await Macro.PreprocessMacros(command, args, macros);
         }
         
+        ClifferEventHandler.PreprocessArgs(args);
         return await command.InvokeAsync(args);
     }
 
@@ -45,7 +46,7 @@ public static class CommandExtensions {
             }
 
             if (replContext.GetExitCommands().Contains(input, StringComparer.OrdinalIgnoreCase)) {
-                ClifferExitHandler.Exit(Result.Success);
+                ClifferEventHandler.Exit(Result.Success);
             }
 
             var args = replContext.SplitCommandLine(input);
