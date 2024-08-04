@@ -12,7 +12,7 @@ Cliffer uses [.NET attributed programming](https://learn.microsoft.com/en-us/dot
 etc., and it manages all the boilerplate logic for you so you can focus on writing your code and just declare your intentions for that code when you're ready to use it. Cliffer takes 
 care of the rest.
 
-Here is an example from the [clicalc](https://github.com/paulmooreparks/Cliffer/blob/master/clicalc/CliCalcProgram.cs) sample:
+Here is an example from the [clic](https://github.com/paulmooreparks/clic/ClicProgram.cs) sample:
 
 ```c#
 [Command("push", "Push one or more numbers onto the stack")]
@@ -58,8 +58,8 @@ Note that macros can be defined in the configuration file as well as in code, an
 
 There are three demo applications to demonstrate the features and capabilities of Cliffer:
 
-* [CliCalc](CliCalc) - A stack calculator implemented as a REPL (read/eval/print loop).
-* [ClifferBasic](https://github.com/paulmooreparks/ClifferBasic) - A BASIC interpreter in a REPL environment, like the old Commodore 64 or Apple ][ or TI-99/4A that so many of us grew up with.
 * [ClifferDemo](ClifferDemo) - A walkthrough of various Cliffer features.
+* [Clic](https://github.com/paulmooreparks/clic) - A stack calculator implemented as a REPL (read/eval/print loop).
+* [ClifferBasic](https://github.com/paulmooreparks/ClifferBasic) - A BASIC interpreter in a REPL environment, like the old Commodore 64 or Apple ][ or TI-99/4A that so many of us grew up with.
 
 Unfortunately, these are all in various stages of being built, but feel free to explore them or even add to them.

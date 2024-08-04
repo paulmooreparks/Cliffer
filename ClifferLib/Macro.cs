@@ -31,8 +31,8 @@ public class Macro : System.CommandLine.Command {
 
         if (args.Any() && macros.TryGetValue(args[0], out var macro)) {
             var replacement = macro.Definition.Script;
-            // var commandSplits = replacement.Split(';');
-            var commandSplits  = CommandLineStringSplitter.Instance.Split(replacement).ToArray();
+            // var commandSplits  = CommandLineStringSplitter.Instance.Split(replacement).ToArray();
+            var commandSplits = replacement.Split(';');
 
             foreach (var commandSplit in commandSplits) {
                 var replacementParts = commandSplit.Split(' ');

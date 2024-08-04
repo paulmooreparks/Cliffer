@@ -16,8 +16,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "clicalc", "clicalc\clicalc.csproj", "{F7314D91-C78E-4B9F-93C2-CE0DBC4C7552}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DIAttrib", "..\DIAttrib\DIAttrib.csproj", "{A0825B2F-285E-481D-BF5C-01B866156024}"
 EndProject
 Global
@@ -34,10 +32,6 @@ Global
 		{9C596BAF-28CC-4E72-BBA9-13B0FE054C82}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9C596BAF-28CC-4E72-BBA9-13B0FE054C82}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9C596BAF-28CC-4E72-BBA9-13B0FE054C82}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F7314D91-C78E-4B9F-93C2-CE0DBC4C7552}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F7314D91-C78E-4B9F-93C2-CE0DBC4C7552}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F7314D91-C78E-4B9F-93C2-CE0DBC4C7552}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F7314D91-C78E-4B9F-93C2-CE0DBC4C7552}.Release|Any CPU.Build.0 = Release|Any CPU
 		{A0825B2F-285E-481D-BF5C-01B866156024}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A0825B2F-285E-481D-BF5C-01B866156024}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A0825B2F-285E-481D-BF5C-01B866156024}.Release|Any CPU.ActiveCfg = Release|Any CPU
