@@ -34,29 +34,35 @@ public class Macro : System.CommandLine.Command {
             // var commandSplits  = CommandLineStringSplitter.Instance.Split(replacement).ToArray();
             var commandSplits = replacement.Split(';');
 
-            foreach (var commandSplit in commandSplits) {
-                var replacementParts = commandSplit.Split(' ');
-                var newArgs = new List<string>();
+            try {
+                foreach (var commandSplit in commandSplits) {
+                    var replacementParts = commandSplit.Split(' ');
+                    var newArgs = new List<string>();
 
-                if (CustomMacroArgumentProcessor is not null) {
-                    newArgs.AddRange(CustomMacroArgumentProcessor(replacementParts));
-                }
-                else {
-                    var configuration = Utility.GetService<IConfiguration>();
-
-                    foreach (var arg in replacementParts) {
-                        var newArg = arg.ReplaceVariablePlaceholders(configuration!, args);
-                        newArgs.AddRange(newArg.Split(' '));
+                    if (CustomMacroArgumentProcessor is not null) {
+                        newArgs.AddRange(CustomMacroArgumentProcessor(replacementParts));
                     }
+                    else {
+                        var configuration = Utility.GetService<IConfiguration>();
 
-                    if (result == Result.Success) {
-                        var parseResult = command.Parse(newArgs.ToArray());
-                        result = await parseResult.InvokeAsync();
+                        foreach (var arg in replacementParts) {
+                            var newArg = arg.ReplaceVariablePlaceholders(configuration!, args);
+                            newArgs.AddRange(newArg.Split(' '));
+                        }
+
+                        if (result == Result.Success) {
+                            var parseResult = command.Parse(newArgs.ToArray());
+                            result = await parseResult.InvokeAsync();
+                        }
                     }
                 }
+
+                return result;
             }
-
-            return result;
+            catch (Exception ex) {
+                Console.WriteLine(ex.Message);
+                return Result.Error;
+            }
         }
 
         return await command.InvokeAsync(args);

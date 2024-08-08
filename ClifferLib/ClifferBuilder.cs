@@ -20,6 +20,14 @@ public class ClifferBuilder : IClifferBuilder {
         ConfigureDefaultConfiguration();
     }
 
+    public IConfiguration BuildConfiguration() {
+        if (_configurationBuilder is null) {
+            _configurationBuilder = new ConfigurationBuilder();
+        }
+
+        return _configurationBuilder.Build();
+    }
+
     private void ConfigureDefaultConfiguration() {
         if (_configurationBuilder is null) {
             _configurationBuilder = new ConfigurationBuilder();
@@ -31,10 +39,13 @@ public class ClifferBuilder : IClifferBuilder {
 
         if (assemblyDirectory != null) {
             var appSettingsPath = Path.Combine(assemblyDirectory, "appSettings.json");
-            _configurationBuilder.AddJsonFile(appSettingsPath, optional: true, reloadOnChange: true);
+
+            if (File.Exists(appSettingsPath)) {
+                _configurationBuilder.AddJsonFile(appSettingsPath, optional: true, reloadOnChange: true);
+            }
         }
 
-        _configuration = _configurationBuilder.Build();
+        _configuration = BuildConfiguration();
         _services.AddClifferServices(_configuration);
         ConfigureAppConfiguration();
         ConfigureServices();
@@ -45,7 +56,7 @@ public class ClifferBuilder : IClifferBuilder {
             _configurationBuilder = new ConfigurationBuilder();
         }
 
-        _configuration = _configurationBuilder.Build();
+        _configuration = BuildConfiguration();
         _services.AddSingleton<IConfiguration>(_configuration);
         return this;
     }
@@ -65,6 +76,11 @@ public class ClifferBuilder : IClifferBuilder {
 
     public IClifferBuilder ConfigureServices(Action<IServiceCollection> configureServices) {
         configureServices(_services);
+        return ConfigureServices();
+    }
+
+    public IClifferBuilder ConfigureServices<TContext>(Action<TContext, IServiceCollection> configureServices, TContext context) {
+        configureServices(context, _services);
         return ConfigureServices();
     }
 
