@@ -175,10 +175,18 @@ public class ClifferBuilder : IClifferBuilder {
             }
         }
 
+        return AddCommands(entryAssembly);
+    }
+
+    public IClifferBuilder AddCommands(Assembly assembly) {
         /* TODO: This can be optimised. If the CLI is not starting in interactive mode and is not displaying the help text, 
         then all of the commands do not need to be processed. That could improve startup time in a non-interactive environment. */
 
-        var commandTypes = entryAssembly.GetTypes()
+        if (_serviceProvider is null) {
+            throw new ApplicationException("Service provider is null");
+        }
+
+        var commandTypes = assembly.GetTypes()
             .Where(t => t.GetCustomAttribute<CommandAttribute>() != null);
 
         var commands = new SortedDictionary<string, System.CommandLine.Command>();
@@ -360,7 +368,7 @@ public class ClifferBuilder : IClifferBuilder {
                         for (int i = 0; i < configureParamValues.Length; i++) {
                             var paramType = configureMethodParams[i].ParameterType;
 
-                            if ( paramType == typeof(Command)) {
+                            if (paramType == typeof(Command)) {
                                 configureParamValues[i] = command;
                                 continue;
                             }
