@@ -156,6 +156,119 @@ public class ClifferBuilder : IClifferBuilder {
         // Create an instance of the command using the constructor with parameters
         var rootCommandInstance = rootConstructorInfo.Invoke(rootConstructorParamValues);
 
+        var argumentAttributes = rootConstructorInfo.GetCustomAttributes<ArgumentAttribute>();
+
+        if (argumentAttributes is not null) {
+            foreach (var attr in argumentAttributes) {
+                var argumentType = typeof(Argument<>).MakeGenericType(attr.Type);
+                var constructor = argumentType.GetConstructor(new[] { typeof(string), typeof(string) });
+
+                if (constructor != null) {
+                    var argument = (Argument)constructor.Invoke(new object?[] { attr.Name, attr.Description });
+
+                    System.CommandLine.ArgumentArity arity = attr.Arity switch {
+                        ArgumentArity.Zero => System.CommandLine.ArgumentArity.Zero,
+                        ArgumentArity.ZeroOrOne => System.CommandLine.ArgumentArity.ZeroOrOne,
+                        ArgumentArity.ExactlyOne => System.CommandLine.ArgumentArity.ExactlyOne,
+                        ArgumentArity.ZeroOrMore => System.CommandLine.ArgumentArity.ZeroOrMore,
+                        ArgumentArity.OneOrMore => System.CommandLine.ArgumentArity.OneOrMore,
+                        _ => System.CommandLine.ArgumentArity.ZeroOrOne
+                    };
+
+                    argument.Arity = arity;
+                    argument.IsHidden = attr.IsHidden;
+
+                    var defaultValueMethod = rootCommandType.GetMethod(attr.DefaultValueMethodName, BindingFlags.NonPublic | BindingFlags.Instance);
+
+                    if (defaultValueMethod != null) {
+                        argument.SetDefaultValueFactory(() => {
+                            var handlerParams = defaultValueMethod.GetParameters();
+                            var parameterValues = new object[handlerParams.Length];
+
+                            for (int i = 0; i < handlerParams.Length; i++) {
+                                var param = handlerParams[i];
+                                object? value = null;
+                                value = _serviceProvider.GetService(param.ParameterType);
+
+                                // Assign the resolved value to the parameterValues array
+                                if (value != null) {
+                                    parameterValues[i] = value;
+                                }
+                            }
+
+                            return defaultValueMethod.Invoke(_rootCommand, parameterValues);
+                        });
+                    }
+
+                    _rootCommand.AddArgument(argument);
+                }
+            }
+        }
+
+        var optionAttributes = rootCommandType.GetCustomAttributes<OptionAttribute>();
+
+        if (optionAttributes is not null) {
+            foreach (var attr in optionAttributes) {
+                var optionType = typeof(Option<>).MakeGenericType(attr.Type);
+                var constructor = optionType.GetConstructor(new[] { typeof(string), typeof(string) });
+
+                if (constructor != null) {
+                    var option = (Option)constructor.Invoke(new object?[] { attr.Name, attr.Description });
+                    var aliases = attr.Aliases;
+
+                    if (aliases != null) {
+                        foreach (var alias in aliases) {
+                            option.AddAlias(alias);
+                        }
+                    }
+
+                    System.CommandLine.ArgumentArity arity = attr.Arity switch {
+                        ArgumentArity.Zero => System.CommandLine.ArgumentArity.Zero,
+                        ArgumentArity.ZeroOrOne => System.CommandLine.ArgumentArity.ZeroOrOne,
+                        ArgumentArity.ExactlyOne => System.CommandLine.ArgumentArity.ExactlyOne,
+                        ArgumentArity.ZeroOrMore => System.CommandLine.ArgumentArity.ZeroOrMore,
+                        ArgumentArity.OneOrMore => System.CommandLine.ArgumentArity.OneOrMore,
+                        _ => System.CommandLine.ArgumentArity.ZeroOrOne
+                    };
+
+                    option.Arity = arity;
+                    option.IsHidden = attr.IsHidden;
+                    option.IsRequired = attr.IsRequired;
+                    option.AllowMultipleArgumentsPerToken = attr.AllowMultipleArgumentsPerToken;
+
+                    if (attr.FromAmong.Length > 0) {
+                        option.FromAmong(attr.FromAmong);
+                    }
+
+                    var defaultValueMethod = rootCommandType.GetMethod(attr.DefaultValueMethodName, BindingFlags.NonPublic | BindingFlags.Instance);
+
+                    if (defaultValueMethod != null) {
+                        option.SetDefaultValueFactory(() => {
+                            var handlerParams = defaultValueMethod.GetParameters();
+                            var parameterValues = new object[handlerParams.Length];
+
+                            for (int i = 0; i < handlerParams.Length; i++) {
+                                var param = handlerParams[i];
+                                object? value = null;
+                                value = _serviceProvider.GetService(param.ParameterType);
+
+                                // Assign the resolved value to the parameterValues array
+                                if (value != null) {
+                                    parameterValues[i] = value;
+                                }
+                            }
+
+                            return defaultValueMethod.Invoke(_rootCommand, parameterValues);
+                        });
+                    }
+
+                    _rootCommand.AddOption(option);
+                }
+            }
+        }
+
+
+
         if (rootCommandInstance is not null) {
             AttachDynamicHandler(rootCommandType, _rootCommand, rootCommandInstance!, rootHandlerMethod);
 
