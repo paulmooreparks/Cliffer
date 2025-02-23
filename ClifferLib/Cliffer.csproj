@@ -7,8 +7,8 @@
         <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
         <Authors>Paul M. Parks</Authors>
         <Description>A library to simplify the authoring of CLI applications with System.CommandLine.</Description>
-        <Copyright>Copyright (c) 2024, Paul M. Parks</Copyright>
-        <Version>0.4.8-prerelease</Version>
+        <Copyright>Copyright (c) 2025, Paul M. Parks</Copyright>
+        <Version>0.4.9-prerelease</Version>
         <SignAssembly>True</SignAssembly>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <Title>Cliffer CLI Library</Title>
