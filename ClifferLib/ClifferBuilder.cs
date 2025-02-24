@@ -122,40 +122,6 @@ public class ClifferBuilder : IClifferBuilder {
             throw new ApplicationException($"No constructor found for type {rootCommandType.FullName}");
         }
 
-        // Prepare an array to hold the parameter values for the constructor
-        var rootConstructorParams = rootConstructorInfo.GetParameters();
-        var rootConstructorParamValues = new object[rootConstructorParams.Length];
-
-        // Fill the array with instances obtained from the service container
-        for (int i = 0; i < rootConstructorParams.Length; i++) {
-            var paramType = rootConstructorParams[i].ParameterType;
-            var serviceInstance = serviceProvider.GetService(paramType);
-            rootConstructorParamValues[i] = serviceInstance ?? throw new InvalidOperationException($"Service for type {paramType.FullName} not found");
-        }
-
-        if (!string.IsNullOrEmpty(rootCommandAttribute.Name)) {
-            _rootCommand.Name = rootCommandAttribute.Name;
-        }
-
-        _rootCommand.Description = rootCommandAttribute.Description;
-        _rootCommand.IsHidden = rootCommandAttribute.IsHidden;
-
-        {
-            var aliases = rootCommandAttribute.Aliases;
-
-            if (aliases != null) {
-                foreach (var alias in aliases) {
-                    _rootCommand.AddAlias(alias);
-                }
-            }
-        }
-
-        _services.AddSingleton(_rootCommand);
-        _serviceProvider = _services.BuildServiceProvider();
-
-        // Create an instance of the command using the constructor with parameters
-        var rootCommandInstance = rootConstructorInfo.Invoke(rootConstructorParamValues);
-
         var argumentAttributes = rootConstructorInfo.GetCustomAttributes<ArgumentAttribute>();
 
         if (argumentAttributes is not null) {
@@ -267,7 +233,70 @@ public class ClifferBuilder : IClifferBuilder {
             }
         }
 
+        // Prepare an array to hold the parameter values for the constructor
+        var rootConstructorParams = rootConstructorInfo.GetParameters();
+        var rootConstructorParamValues = new object[rootConstructorParams.Length];
 
+        // Fill the array with instances obtained from the service container
+        for (int i = 0; i < rootConstructorParams.Length; i++) {
+            var param = rootConstructorParams[i];
+            var paramType = rootConstructorParams[i].ParameterType;
+
+            Symbol? symbol = null;
+            var optionAttribute = param.GetCustomAttribute<OptionParamAttribute>();
+            if (optionAttribute != null) {
+                symbol = _rootCommand.Options.FirstOrDefault(o => o.HasAlias(optionAttribute.Name));
+            }
+            else {
+                var argumentAttribute = param.GetCustomAttribute<ArgumentParamAttribute>();
+                if (argumentAttribute != null) {
+                    symbol = _rootCommand.Arguments.FirstOrDefault(a => a.Name == argumentAttribute.Name);
+                }
+            }
+
+            if (symbol == null) {
+                symbol = _rootCommand.Children.FirstOrDefault(c => c.Name == param.Name);
+            }
+
+            // Determine if the child is an option or an argument and get the value accordingly
+            if (symbol is Option option) {
+                if (paramType == typeof(Option)) {
+                    rootConstructorParamValues[i] = option;
+                }
+            }
+            else if (symbol is Argument argument) {
+                if (paramType == typeof(Argument)) {
+                    rootConstructorParamValues[i] = argument;
+                }
+            }
+            else {
+                var serviceInstance = serviceProvider.GetService(paramType);
+                rootConstructorParamValues[i] = serviceInstance ?? throw new InvalidOperationException($"Service for type {paramType.FullName} not found");
+            }
+        }
+
+        if (!string.IsNullOrEmpty(rootCommandAttribute.Name)) {
+            _rootCommand.Name = rootCommandAttribute.Name;
+        }
+
+        _rootCommand.Description = rootCommandAttribute.Description;
+        _rootCommand.IsHidden = rootCommandAttribute.IsHidden;
+
+        {
+            var aliases = rootCommandAttribute.Aliases;
+
+            if (aliases != null) {
+                foreach (var alias in aliases) {
+                    _rootCommand.AddAlias(alias);
+                }
+            }
+        }
+
+        _services.AddSingleton(_rootCommand);
+        _serviceProvider = _services.BuildServiceProvider();
+
+        // Create an instance of the command using the constructor with parameters
+        var rootCommandInstance = rootConstructorInfo.Invoke(rootConstructorParamValues);
 
         if (rootCommandInstance is not null) {
             AttachDynamicHandler(rootCommandType, _rootCommand, rootCommandInstance!, rootHandlerMethod);
