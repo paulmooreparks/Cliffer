@@ -621,10 +621,20 @@ public class ClifferBuilder : IClifferBuilder {
 
                 // Determine if the child is an option or an argument and get the value accordingly
                 if (symbol is Option option) {
-                    value = invocationContext.ParseResult.GetValueForOption(option);
+                    if (param.ParameterType == typeof(Option)) {
+                        value = option;
+                    }
+                    else {
+                        value = invocationContext.ParseResult.GetValueForOption(option);
+                    }
                 }
                 else if (symbol is Argument argument) {
-                    value = invocationContext.ParseResult.GetValueForArgument(argument);
+                    if (param.ParameterType == typeof(Argument)) {
+                        value = argument;
+                    }
+                    else {
+                        value = invocationContext.ParseResult.GetValueForArgument(argument);
+                    }
 
 #if false
                     /* Nullable types still aren't supported as parameters because I'm still trying to figure out 
