@@ -79,6 +79,15 @@ public class ServiceAttribute : Attribute {
     }
 }
 
+[AttributeUsage(AttributeTargets.Parameter)]
+public class CommandParamAttribute : Attribute {
+    public string Name { get; }
+
+    public CommandParamAttribute(string name) {
+        Name = name;
+    }
+}
+
 // Attribute to indicate a parameter is bound to a command-line option
 [AttributeUsage(AttributeTargets.Parameter)]
 public class OptionParamAttribute : Attribute {

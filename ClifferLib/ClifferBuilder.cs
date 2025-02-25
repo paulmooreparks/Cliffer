@@ -499,6 +499,7 @@ public class ClifferBuilder : IClifferBuilder {
 
                     if (handlerMethod != null) {
                         AttachDynamicHandler(type, command, commandInstance!, handlerMethod);
+                        _commands.Add(command.Name, commandInstance!);
                     }
 
                     var configureMethod = type.GetMethod("Configure", BindingFlags.Public | BindingFlags.Instance);
@@ -608,6 +609,8 @@ public class ClifferBuilder : IClifferBuilder {
         return new ClifferCli(_serviceProvider, _services, _rootCommand);
     }
 
+    private readonly Dictionary<string, Object> _commands = new Dictionary<string, Object>();
+
     public void AttachDynamicHandler(Type commandType, Command command, Object commandInstance, MethodInfo handlerMethod) {
         command.Handler = CommandHandler.Create(async Task<int> (InvocationContext invocationContext) => {
             if (_serviceProvider is null) {
@@ -630,21 +633,15 @@ public class ClifferBuilder : IClifferBuilder {
                     continue;
                 }
 
-                Symbol? symbol = null;
-                var optionAttribute = param.GetCustomAttribute<OptionParamAttribute>();
-                if (optionAttribute != null) {
-                    symbol = command.Options.FirstOrDefault(o => o.HasAlias(optionAttribute.Name));
-                }
-                else {
-                    var argumentAttribute = param.GetCustomAttribute<ArgumentParamAttribute>();
-                    if (argumentAttribute != null) {
-                        symbol = command.Arguments.FirstOrDefault(a => a.Name == argumentAttribute.Name);
-                    }
-                }
+                Symbol? symbol = param switch {
+                    _ when param.GetCustomAttribute<OptionParamAttribute>() is OptionParamAttribute optionAttribute
+                        => command.Options.FirstOrDefault(o => o.HasAlias(optionAttribute.Name)),
 
-                if (symbol == null) {
-                    symbol = command.Children.FirstOrDefault(c => c.Name == param.Name);
-                }
+                    _ when param.GetCustomAttribute<ArgumentParamAttribute>() is ArgumentParamAttribute argumentAttribute
+                        => command.Arguments.FirstOrDefault(a => a.Name == argumentAttribute.Name),
+
+                    _ => command.Children.FirstOrDefault(c => c.Name == param.Name)
+                };
 
                 object? value = null;
 
@@ -682,8 +679,14 @@ public class ClifferBuilder : IClifferBuilder {
 #endif
                 }
                 else {
-                    // If the child is neither, then get an instance of the type from the service container (dependency injection)
-                    value = _serviceProvider.GetService(param.ParameterType);
+                    var commandParamAttribute = param.GetCustomAttribute<CommandParamAttribute>();
+                    if (commandParamAttribute != null) {
+                        value = _commands.FirstOrDefault(kvp => kvp.Key == commandParamAttribute.Name).Value;
+                    }
+                    else {
+                        // If the child is none of the above, then get an instance of the type from the service container (dependency injection)
+                        value = _serviceProvider.GetService(param.ParameterType);
+                    }
                 }
 
                 // Assign the resolved value to the parameterValues array
