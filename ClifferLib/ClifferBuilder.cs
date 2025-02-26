@@ -155,7 +155,7 @@ public class ClifferBuilder : IClifferBuilder {
                             for (int i = 0; i < handlerParams.Length; i++) {
                                 var param = handlerParams[i];
                                 object? value = null;
-                                value = _serviceProvider.GetService(param.ParameterType);
+                                value = _serviceProvider?.GetService(param.ParameterType);
 
                                 // Assign the resolved value to the parameterValues array
                                 if (value != null) {
@@ -217,7 +217,7 @@ public class ClifferBuilder : IClifferBuilder {
                             for (int i = 0; i < handlerParams.Length; i++) {
                                 var param = handlerParams[i];
                                 object? value = null;
-                                value = _serviceProvider.GetService(param.ParameterType);
+                                value = _serviceProvider?.GetService(param.ParameterType);
 
                                 // Assign the resolved value to the parameterValues array
                                 if (value != null) {
