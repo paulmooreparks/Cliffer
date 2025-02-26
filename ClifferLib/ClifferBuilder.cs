@@ -14,6 +14,7 @@ public class ClifferBuilder : IClifferBuilder {
     internal ConfigurationBuilder? _configurationBuilder;
 
     internal RootCommand _rootCommand = new RootCommand();
+    private readonly Dictionary<string, Object> _commands = new Dictionary<string, Object>();
 
     public ClifferBuilder() 
     {
@@ -270,8 +271,13 @@ public class ClifferBuilder : IClifferBuilder {
                 }
             }
             else {
-                var serviceInstance = serviceProvider.GetService(paramType);
-                rootConstructorParamValues[i] = serviceInstance ?? throw new InvalidOperationException($"Service for type {paramType.FullName} not found");
+                if (paramType == typeof(System.CommandLine.RootCommand)) {
+                    rootConstructorParamValues[i] = _rootCommand;
+                }
+                else {
+                    var serviceInstance = serviceProvider.GetService(paramType);
+                    rootConstructorParamValues[i] = serviceInstance ?? throw new InvalidOperationException($"Service for type {paramType.FullName} not found");
+                }
             }
         }
 
@@ -300,6 +306,8 @@ public class ClifferBuilder : IClifferBuilder {
 
         if (rootCommandInstance is not null) {
             AttachDynamicHandler(rootCommandType, _rootCommand, rootCommandInstance!, rootHandlerMethod);
+            _commands.Add(_rootCommand.Name, rootCommandInstance!);
+
 
             var configureMethod = rootCommandType.GetMethod("Configure", BindingFlags.Public | BindingFlags.Instance);
 
@@ -608,8 +616,6 @@ public class ClifferBuilder : IClifferBuilder {
 
         return new ClifferCli(_serviceProvider, _services, _rootCommand);
     }
-
-    private readonly Dictionary<string, Object> _commands = new Dictionary<string, Object>();
 
     public void AttachDynamicHandler(Type commandType, Command command, Object commandInstance, MethodInfo handlerMethod) {
         command.Handler = CommandHandler.Create(async Task<int> (InvocationContext invocationContext) => {

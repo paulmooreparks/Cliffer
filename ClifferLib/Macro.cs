@@ -39,21 +39,22 @@ public class Macro : System.CommandLine.Command {
                     var replacementParts = commandSplit.Split(' ');
                     var newArgs = new List<string>();
 
-                    if (CustomMacroArgumentProcessor is not null) {
-                        newArgs.AddRange(CustomMacroArgumentProcessor(replacementParts));
+                    var configuration = Utility.GetService<IConfiguration>();
+
+                    foreach (var arg in replacementParts) {
+                        var newArg = arg.ReplaceVariablePlaceholders(configuration!, args);
+                        newArgs.AddRange(newArg.Split(' '));
                     }
-                    else {
-                        var configuration = Utility.GetService<IConfiguration>();
 
-                        foreach (var arg in replacementParts) {
-                            var newArg = arg.ReplaceVariablePlaceholders(configuration!, args);
-                            newArgs.AddRange(newArg.Split(' '));
-                        }
+                    newArgs.AddRange(args.Skip(1));
 
-                        if (result == Result.Success) {
-                            var parseResult = command.Parse(newArgs.ToArray());
-                            result = await parseResult.InvokeAsync();
-                        }
+                    if (CustomMacroArgumentProcessor is not null) {
+                        newArgs = new List<string>(CustomMacroArgumentProcessor(newArgs.ToArray()));
+                    }
+
+                    if (result == Result.Success) {
+                        var parseResult = command.Parse(newArgs.ToArray());
+                        result = await parseResult.InvokeAsync();
                     }
                 }
 
