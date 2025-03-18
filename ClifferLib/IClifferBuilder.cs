@@ -15,5 +15,5 @@ public interface IClifferBuilder {
     IClifferBuilder BuildCommands(IServiceProvider serviceProvider, Action<IConfiguration, RootCommand, IServiceProvider> buildCommands);
     IConfiguration BuildConfiguration();
     IClifferCli Build(Action<IConfiguration, RootCommand, IServiceProvider>? buildCommands = null);
-    IClifferBuilder AddCommands(System.Reflection.Assembly assembly);
+    IClifferBuilder AddCommands(System.Reflection.Assembly[] assemblies);
 }
