@@ -296,7 +296,7 @@ public class ClifferBuilder : IClifferBuilder {
         }
 
         _services.AddSingleton(_rootCommand);
-        _serviceProvider = _services.BuildServiceProvider();
+        // _serviceProvider = _services.BuildServiceProvider();
 
         // Create an instance of the command using the constructor with parameters
         var rootCommandInstance = rootConstructorInfo.Invoke(rootConstructorParamValues);
