@@ -30,36 +30,41 @@ public static class CommandExtensions {
         replContext.OnEntry();
 
         while (true) {
-            replContext.OnLoop();
-            Console.Write($"{replContext.GetPrompt(command, context)}");
+            try {
+                replContext.OnLoop();
+                Console.Write($"{replContext.GetPrompt(command, context)}");
 
-            string? input = Console.ReadLine();
+                string? input = Console.ReadLine();
 
-            if (string.IsNullOrWhiteSpace(input)) {
-                continue;
-            }
-
-            input = input.Trim();
-
-            if (replContext.GetPopCommands().Contains(input, StringComparer.OrdinalIgnoreCase)) {
-                return Result.Success;
-            }
-
-            if (replContext.GetExitCommands().Contains(input, StringComparer.OrdinalIgnoreCase)) {
-                ClifferEventHandler.Exit(Result.Success);
-            }
-
-            var args = replContext.SplitCommandLine(input);
-
-            if (args.Length > 0) {
-                if (replContext.GetHelpCommands().Contains(args[0], StringComparer.OrdinalIgnoreCase)) {
-                    args[0] = "--help";
+                if (string.IsNullOrWhiteSpace(input)) {
+                    continue;
                 }
 
-                args = replContext.PreprocessArgs(args, command, context);
-            }
+                input = input.Trim();
 
-            await replContext.RunAsync(command, args);
+                if (replContext.GetPopCommands().Contains(input, StringComparer.OrdinalIgnoreCase)) {
+                    return Result.Success;
+                }
+
+                if (replContext.GetExitCommands().Contains(input, StringComparer.OrdinalIgnoreCase)) {
+                    ClifferEventHandler.Exit(Result.Success);
+                }
+
+                var args = replContext.SplitCommandLine(input);
+
+                if (args.Length > 0) {
+                    if (replContext.GetHelpCommands().Contains(args[0], StringComparer.OrdinalIgnoreCase)) {
+                        args[0] = "--help";
+                    }
+
+                    args = replContext.PreprocessArgs(args, command, context);
+                }
+
+                await replContext.RunAsync(command, args);
+            }
+            catch (Exception ex) {
+                Console.Error.WriteLine(ex.Message);
+            }
         }
     }
 }
