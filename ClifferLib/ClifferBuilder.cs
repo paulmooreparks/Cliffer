@@ -15,6 +15,7 @@ public class ClifferBuilder : IClifferBuilder {
 
     internal RootCommand _rootCommand = new RootCommand();
     private readonly Dictionary<string, Object> _commands = new Dictionary<string, Object>();
+    private IClifferCli? _cli = default;
 
     public ClifferBuilder() 
     {
@@ -614,7 +615,8 @@ public class ClifferBuilder : IClifferBuilder {
             _rootCommand.AddCommand(macroCommand);
         }
 
-        return new ClifferCli(_serviceProvider, _services, _rootCommand);
+        _cli = new ClifferCli(_serviceProvider, _services, _rootCommand, _commands);
+        return _cli;
     }
 
     public void AttachDynamicHandler(Type commandType, Command command, Object commandInstance, MethodInfo handlerMethod) {
@@ -683,6 +685,11 @@ public class ClifferBuilder : IClifferBuilder {
                         }
                     }
 #endif
+                }
+                else if (param.ParameterType == typeof(IClifferCli)) {
+                    if (_cli is not null) {
+                        value = _cli;
+                    }
                 }
                 else {
                     var commandParamAttribute = param.GetCustomAttribute<CommandParamAttribute>();

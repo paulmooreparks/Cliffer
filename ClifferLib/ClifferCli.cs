@@ -9,16 +9,19 @@ internal class ClifferCli : IClifferCli {
     public IServiceProvider ServiceProvider { get; set; }
     public IServiceCollection Services;
     private RootCommand _rootCommand;
+    public IDictionary<string, Object> Commands { get; set; }
 
     public ClifferCli(
         IServiceProvider serviceProvider, 
         IServiceCollection serviceCollection,
-        RootCommand rootCommand
+        RootCommand rootCommand,
+        IDictionary<string, Object> commands
         )
     {
         ServiceProvider = serviceProvider;
         Services = serviceCollection;
         _rootCommand = rootCommand;
+        Commands = commands;
 
         if (_rootCommand is null) {
             throw new InvalidOperationException("Root command not found.");
