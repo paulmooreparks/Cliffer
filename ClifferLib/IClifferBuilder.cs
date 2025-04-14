@@ -1,4 +1,7 @@
 ﻿using System.CommandLine;
+using System.CommandLine.Binding;
+using System.CommandLine.Help;
+
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -16,4 +19,5 @@ public interface IClifferBuilder {
     IConfiguration BuildConfiguration();
     IClifferCli Build(Action<IConfiguration, RootCommand, IServiceProvider>? buildCommands = null);
     IClifferBuilder AddCommands(System.Reflection.Assembly[] assemblies);
+    IClifferBuilder UseHelpBuilder(Func<BindingContext, HelpBuilder> getHelpBuilder);
 }

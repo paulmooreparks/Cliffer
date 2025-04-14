@@ -1,4 +1,5 @@
 ﻿using System.CommandLine;
+using System.CommandLine.Parsing;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,17 +10,21 @@ internal class ClifferCli : IClifferCli {
     public IServiceProvider ServiceProvider { get; set; }
     public IServiceCollection Services;
     private RootCommand _rootCommand;
+    public Parser Parser { get; }
+
     public IDictionary<string, Object> Commands { get; set; }
 
     public ClifferCli(
         IServiceProvider serviceProvider, 
         IServiceCollection serviceCollection,
         RootCommand rootCommand,
+        Parser parser,
         IDictionary<string, Object> commands
         )
     {
         ServiceProvider = serviceProvider;
         Services = serviceCollection;
+        Parser = parser;
         _rootCommand = rootCommand;
         Commands = commands;
 
@@ -32,7 +37,8 @@ internal class ClifferCli : IClifferCli {
         int result = Result.Error;
 
         try {
-            result = await _rootCommand.RunAsync(args);
+            // result = await _rootCommand.RunAsync(args);
+            result = await Parser.InvokeAsync(args);
             return result;
         }
         finally {

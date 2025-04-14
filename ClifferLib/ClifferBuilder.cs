@@ -4,6 +4,9 @@ using System.CommandLine.Invocation;
 using System.CommandLine.NamingConventionBinder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System.CommandLine.Builder;
+using System.CommandLine.Binding;
+using System.CommandLine.Help;
 
 namespace Cliffer;
 
@@ -315,7 +318,7 @@ public class ClifferBuilder : IClifferBuilder {
 
                 for (int i = 0; i < configureParamValues.Length; i++) {
                     var paramType = configureMethodParams[i].ParameterType;
-                    var serviceInstance = _serviceProvider.GetService(paramType);
+                    var serviceInstance = _serviceProvider?.GetService(paramType);
                     configureParamValues[i] = serviceInstance ?? throw new InvalidOperationException($"Service for type {paramType.FullName} not found");
                 }
 
@@ -615,122 +618,143 @@ public class ClifferBuilder : IClifferBuilder {
             _rootCommand.AddCommand(macroCommand);
         }
 
-        _cli = new ClifferCli(_serviceProvider, _services, _rootCommand, _commands);
+        var commandLineBuilder = new CommandLineBuilder(_rootCommand);
+        commandLineBuilder.UseHelp();
+        // commandLineBuilder.UseVersionOption(); 
+        commandLineBuilder.UseParseErrorReporting();
+        commandLineBuilder.UseExceptionHandler();
+
+        if (_helpBuilderFactory != null) {
+            commandLineBuilder.UseHelpBuilder(_helpBuilderFactory);
+        }
+
+        var parser = commandLineBuilder.Build(); 
+
+        _cli = new ClifferCli(_serviceProvider, _services, _rootCommand, parser, _commands);
         return _cli;
     }
 
+    private Func<BindingContext, HelpBuilder>? _helpBuilderFactory;
+
+    public IClifferBuilder UseHelpBuilder(Func<BindingContext, HelpBuilder> getHelpBuilder) {
+        _helpBuilderFactory = getHelpBuilder ?? throw new ArgumentNullException(nameof(getHelpBuilder));
+        return this;
+    }
+
     public void AttachDynamicHandler(Type commandType, Command command, Object commandInstance, MethodInfo handlerMethod) {
-        command.Handler = CommandHandler.Create(async Task<int> (InvocationContext invocationContext) => {
-            if (_serviceProvider is null) {
-                throw new InvalidOperationException("Service provider not found");
+        command.Handler = CommandHandler.Create((InvocationContext invocationContext) => DynamicHandler(invocationContext, command, commandInstance, handlerMethod));
+    }
+
+    private async Task<int> DynamicHandler(InvocationContext invocationContext, Command command, object commandInstance, MethodInfo handlerMethod) {
+        if (_serviceProvider is null) {
+            throw new InvalidOperationException("Service provider not found");
+        }
+
+        var commandType = command.GetType();
+        var handlerParams = handlerMethod.GetParameters();
+        var parameterValues = new object[handlerParams.Length];
+
+        for (int i = 0; i < handlerParams.Length; i++) {
+            var param = handlerParams[i];
+            if (param.ParameterType == typeof(InvocationContext)) {
+                parameterValues[i] = invocationContext;
+                continue;
             }
 
-            var commandType = command.GetType();
-            var handlerParams = handlerMethod.GetParameters();
-            var parameterValues = new object[handlerParams.Length];
+            if (param.ParameterType == typeof(Command)) {
+                parameterValues[i] = invocationContext.ParseResult.CommandResult.Command;
+                continue;
+            }
 
-            for (int i = 0; i < handlerParams.Length; i++) {
-                var param = handlerParams[i];
-                if (param.ParameterType == typeof(InvocationContext)) {
-                    parameterValues[i] = invocationContext;
-                    continue;
-                }
+            Symbol? symbol = param switch {
+                _ when param.GetCustomAttribute<OptionParamAttribute>() is OptionParamAttribute optionAttribute
+                    => command.Options.FirstOrDefault(o => o.HasAlias(optionAttribute.Name)),
 
-                if (param.ParameterType == typeof(Command)) {
-                    parameterValues[i] = invocationContext.ParseResult.CommandResult.Command;
-                    continue;
-                }
+                _ when param.GetCustomAttribute<ArgumentParamAttribute>() is ArgumentParamAttribute argumentAttribute
+                    => command.Arguments.FirstOrDefault(a => a.Name == argumentAttribute.Name),
 
-                Symbol? symbol = param switch {
-                    _ when param.GetCustomAttribute<OptionParamAttribute>() is OptionParamAttribute optionAttribute
-                        => command.Options.FirstOrDefault(o => o.HasAlias(optionAttribute.Name)),
+                _ => command.Children.FirstOrDefault(c => c.Name == param.Name)
+            };
 
-                    _ when param.GetCustomAttribute<ArgumentParamAttribute>() is ArgumentParamAttribute argumentAttribute
-                        => command.Arguments.FirstOrDefault(a => a.Name == argumentAttribute.Name),
+            object? value = null;
 
-                    _ => command.Children.FirstOrDefault(c => c.Name == param.Name)
-                };
-
-                object? value = null;
-
-                // Determine if the child is an option or an argument and get the value accordingly
-                if (symbol is Option option) {
-                    if (param.ParameterType == typeof(Option)) {
-                        value = option;
-                    }
-                    else {
-                        value = invocationContext.ParseResult.GetValueForOption(option);
-                    }
-                }
-                else if (symbol is Argument argument) {
-                    if (param.ParameterType == typeof(Argument)) {
-                        value = argument;
-                    }
-                    else {
-                        value = invocationContext.ParseResult.GetValueForArgument(argument);
-                    }
-
-#if false
-                    /* Nullable types still aren't supported as parameters because I'm still trying to figure out 
-                    how to pass them. If anyone has any ideas here, please let me know. */
-
-                    if (param.ParameterType.IsGenericType && param.ParameterType.GetGenericTypeDefinition() == typeof(Nullable<>) && value is not null) {
-                        var underlyingType = Nullable.GetUnderlyingType(param.ParameterType);
-
-                        if (value is not null && underlyingType is not null) {
-                            value = Convert.ChangeType(invocationContext.ParseResult.GetValueForArgument(argument), underlyingType);
-                            var nullableType = typeof(Nullable<>).MakeGenericType(underlyingType);
-                            var nullableInstance = Activator.CreateInstance(nullableType, new object[] { });
-                            // value = Activator.CreateInstance(param.ParameterType, new object?[] { value });
-                        }
-                    }
-#endif
-                }
-                else if (param.ParameterType == typeof(IClifferCli)) {
-                    if (_cli is not null) {
-                        value = _cli;
-                    }
+            // Determine if the child is an option or an argument and get the value accordingly
+            if (symbol is Option option) {
+                if (param.ParameterType == typeof(Option)) {
+                    value = option;
                 }
                 else {
-                    var commandParamAttribute = param.GetCustomAttribute<CommandParamAttribute>();
-                    if (commandParamAttribute != null) {
-                        value = _commands.FirstOrDefault(kvp => kvp.Key == commandParamAttribute.Name).Value;
-                    }
-                    else {
-                        // If the child is none of the above, then get an instance of the type from the service container (dependency injection)
-                        value = _serviceProvider.GetService(param.ParameterType);
-                    }
+                    value = invocationContext.ParseResult.GetValueForOption(option);
+                }
+            }
+            else if (symbol is Argument argument) {
+                if (param.ParameterType == typeof(Argument)) {
+                    value = argument;
+                }
+                else {
+                    value = invocationContext.ParseResult.GetValueForArgument(argument);
                 }
 
-                // Assign the resolved value to the parameterValues array
-                if (value != null) {
-                    parameterValues[i] = value;
+#if false
+                /* Nullable types still aren't supported as parameters because I'm still trying to figure out 
+                how to pass them. If anyone has any ideas here, please let me know. */
+
+                if (param.ParameterType.IsGenericType && param.ParameterType.GetGenericTypeDefinition() == typeof(Nullable<>) && value is not null) {
+                    var underlyingType = Nullable.GetUnderlyingType(param.ParameterType);
+
+                    if (value is not null && underlyingType is not null) {
+                        value = Convert.ChangeType(invocationContext.ParseResult.GetValueForArgument(argument), underlyingType);
+                        var nullableType = typeof(Nullable<>).MakeGenericType(underlyingType);
+                        var nullableInstance = Activator.CreateInstance(nullableType, new object[] { });
+                        // value = Activator.CreateInstance(param.ParameterType, new object?[] { value });
+                    }
+                }
+#endif
+            }
+            else if (param.ParameterType == typeof(IClifferCli)) {
+                if (_cli is not null) {
+                    value = _cli;
+                }
+            }
+            else {
+                var commandParamAttribute = param.GetCustomAttribute<CommandParamAttribute>();
+                if (commandParamAttribute != null) {
+                    value = _commands.FirstOrDefault(kvp => kvp.Key == commandParamAttribute.Name).Value;
+                }
+                else {
+                    // If the child is none of the above, then get an instance of the type from the service container (dependency injection)
+                    value = _serviceProvider.GetService(param.ParameterType);
                 }
             }
 
-            Type returnType = handlerMethod.ReturnType;
-
-            switch (returnType) {
-                case Type t when t == typeof(Task):
-                    var task = handlerMethod.Invoke(commandInstance, parameterValues) as Task;
-                    await task!;
-                    return 0;
-
-                case Type t when t == typeof(void):
-                    handlerMethod.Invoke(commandInstance, parameterValues);
-                    return 0;
-
-                case Type t when t == typeof(Task<int>):
-                    var taskInt = handlerMethod.Invoke(commandInstance, parameterValues) as Task<int>;
-                    return await taskInt!;
-
-                case Type t when t == typeof(int):
-                    var result = handlerMethod.Invoke(commandInstance, parameterValues);
-                    return Convert.ToInt32(result);
+            // Assign the resolved value to the parameterValues array
+            if (value != null) {
+                parameterValues[i] = value;
             }
+        }
 
-            return 0;
-        });
+        Type returnType = handlerMethod.ReturnType;
+
+        switch (returnType) {
+            case Type t when t == typeof(Task):
+                var task = handlerMethod.Invoke(commandInstance, parameterValues) as Task;
+                await task!;
+                return 0;
+
+            case Type t when t == typeof(void):
+                handlerMethod.Invoke(commandInstance, parameterValues);
+                return 0;
+
+            case Type t when t == typeof(Task<int>):
+                var taskInt = handlerMethod.Invoke(commandInstance, parameterValues) as Task<int>;
+                return await taskInt!;
+
+            case Type t when t == typeof(int):
+                var result = handlerMethod.Invoke(commandInstance, parameterValues);
+                return Convert.ToInt32(result);
+        }
+
+        return 0;
     }
 
     private static object? ConvertToType(object value, Type targetType) {
