@@ -17,7 +17,7 @@ public class ClifferBuilder : IClifferBuilder {
     internal ConfigurationBuilder? _configurationBuilder;
 
     internal RootCommand _rootCommand = new RootCommand();
-    private readonly Dictionary<string, Object> _commands = new Dictionary<string, Object>();
+    internal object? _rootCommandInstance;
     private IClifferCli? _cli = default;
 
     public ClifferBuilder() 
@@ -306,9 +306,8 @@ public class ClifferBuilder : IClifferBuilder {
         var rootCommandInstance = rootConstructorInfo.Invoke(rootConstructorParamValues);
 
         if (rootCommandInstance is not null) {
+            _rootCommandInstance = rootCommandInstance;
             AttachDynamicHandler(rootCommandType, _rootCommand, rootCommandInstance!, rootHandlerMethod);
-            _commands.Add(_rootCommand.Name, rootCommandInstance!);
-
 
             var configureMethod = rootCommandType.GetMethod("Configure", BindingFlags.Public | BindingFlags.Instance);
 
@@ -330,224 +329,138 @@ public class ClifferBuilder : IClifferBuilder {
     }
 
     public IClifferBuilder AddCommands(Assembly[] assemblies) {
-        /* TODO: This can be optimised. If the CLI is not starting in interactive mode and is not displaying the help text, 
-        then all of the commands do not need to be processed. That could improve startup time in a non-interactive environment. */
-
         if (_serviceProvider is null) {
             throw new ApplicationException("Service provider is null");
         }
 
-        var commands = new SortedDictionary<string, System.CommandLine.Command>();
-        var commandRelations = new List<(string Child, string Parent)>();
-
+        var allCommands = new List<(Type Type, Command Command)>();
+        var commandRelations = new List<(Type ChildType, string ParentName)>();
+        var commandMap = new Dictionary<Type, Command>();
 
         foreach (var assembly in assemblies) {
-            var commandTypes = assembly.GetTypes()
-                .Where(t => t.GetCustomAttribute<CommandAttribute>() != null);
+            var commandTypes = assembly.GetTypes().Where(t => t.GetCustomAttribute<CommandAttribute>() != null);
 
             foreach (var type in commandTypes) {
                 var commandAttribute = type.GetCustomAttribute<Cliffer.CommandAttribute>();
+                if (commandAttribute is null)
+                    continue;
 
-                if (commandAttribute is not null) {
-                    var command = new Command(commandAttribute.Name, commandAttribute.Description);
-                    commands.Add(commandAttribute.Name, command);
+                var command = new Command(commandAttribute.Name, commandAttribute.Description);
+                allCommands.Add((type, command));
+                commandMap[type] = command;
 
-                    if (!string.IsNullOrEmpty(commandAttribute.Parent)) {
-                        commandRelations.Add((commandAttribute.Name, commandAttribute.Parent));
+                if (!string.IsNullOrEmpty(commandAttribute.Parent)) {
+                    commandRelations.Add((type, commandAttribute.Parent));
+                }
+
+                var constructorInfo = type.GetConstructors().FirstOrDefault();
+                if (constructorInfo == null) {
+                    throw new InvalidOperationException($"No constructor found for type {type.FullName}");
+                }
+
+                var constructorParams = constructorInfo.GetParameters();
+                var constructorParamValues = new object[constructorParams.Length];
+                for (int i = 0; i < constructorParams.Length; i++) {
+                    var paramType = constructorParams[i].ParameterType;
+                    constructorParamValues[i] = paramType == typeof(IServiceProvider)
+                        ? _serviceProvider
+                        : _serviceProvider.GetService(paramType) ?? throw new InvalidOperationException($"Service for type {paramType.FullName} not found");
+                }
+
+                var commandInstance = constructorInfo.Invoke(constructorParamValues);
+                if (commandInstance is null)
+                    continue;
+
+                command.IsHidden = commandAttribute.IsHidden;
+                foreach (var alias in commandAttribute.Aliases ?? Array.Empty<string>()) {
+                    command.AddAlias(alias);
+                }
+
+                foreach (var attr in type.GetCustomAttributes<ArgumentAttribute>()) {
+                    var argType = typeof(Argument<>).MakeGenericType(attr.Type);
+                    var ctor = argType.GetConstructor(new[] { typeof(string), typeof(string) });
+                    if (ctor == null)
+                        continue;
+
+                    var argument = (Argument)ctor.Invoke(new object?[] { attr.Name, attr.Description });
+                    argument.Arity = attr.Arity switch {
+                        ArgumentArity.Zero => System.CommandLine.ArgumentArity.Zero,
+                        ArgumentArity.ZeroOrOne => System.CommandLine.ArgumentArity.ZeroOrOne,
+                        ArgumentArity.ExactlyOne => System.CommandLine.ArgumentArity.ExactlyOne,
+                        ArgumentArity.ZeroOrMore => System.CommandLine.ArgumentArity.ZeroOrMore,
+                        ArgumentArity.OneOrMore => System.CommandLine.ArgumentArity.OneOrMore,
+                        _ => System.CommandLine.ArgumentArity.ZeroOrOne
+                    };
+                    argument.IsHidden = attr.IsHidden;
+
+                    var defaultValueMethod = type.GetMethod(attr.DefaultValueMethodName, BindingFlags.NonPublic | BindingFlags.Instance);
+                    if (defaultValueMethod != null) {
+                        argument.SetDefaultValueFactory(() => defaultValueMethod.Invoke(commandInstance,
+                            defaultValueMethod.GetParameters().Select(p => _serviceProvider.GetService(p.ParameterType)).ToArray()));
                     }
 
-                    // Find the constructor with parameters (if any)
-                    var constructorInfo = type.GetConstructors().FirstOrDefault();
-                    if (constructorInfo == null) {
-                        throw new InvalidOperationException($"No constructor found for type {type.FullName}");
+                    command.AddArgument(argument);
+                }
+
+                foreach (var attr in type.GetCustomAttributes<OptionAttribute>()) {
+                    var optType = typeof(Option<>).MakeGenericType(attr.Type);
+                    var ctor = optType.GetConstructor(new[] { typeof(string), typeof(string) });
+                    if (ctor == null)
+                        continue;
+
+                    var option = (Option)ctor.Invoke(new object?[] { attr.Name, attr.Description });
+                    foreach (var alias in attr.Aliases ?? Array.Empty<string>()) {
+                        option.AddAlias(alias);
+                    }
+                    option.Arity = attr.Arity switch {
+                        ArgumentArity.Zero => System.CommandLine.ArgumentArity.Zero,
+                        ArgumentArity.ZeroOrOne => System.CommandLine.ArgumentArity.ZeroOrOne,
+                        ArgumentArity.ExactlyOne => System.CommandLine.ArgumentArity.ExactlyOne,
+                        ArgumentArity.ZeroOrMore => System.CommandLine.ArgumentArity.ZeroOrMore,
+                        ArgumentArity.OneOrMore => System.CommandLine.ArgumentArity.OneOrMore,
+                        _ => System.CommandLine.ArgumentArity.ZeroOrOne
+                    };
+                    option.IsHidden = attr.IsHidden;
+                    option.IsRequired = attr.IsRequired;
+                    option.AllowMultipleArgumentsPerToken = attr.AllowMultipleArgumentsPerToken;
+                    if (attr.FromAmong.Length > 0)
+                        option.FromAmong(attr.FromAmong);
+
+                    var defaultValueMethod = type.GetMethod(attr.DefaultValueMethodName, BindingFlags.NonPublic | BindingFlags.Instance);
+                    if (defaultValueMethod != null) {
+                        option.SetDefaultValueFactory(() => defaultValueMethod.Invoke(commandInstance,
+                            defaultValueMethod.GetParameters().Select(p => _serviceProvider.GetService(p.ParameterType)).ToArray()));
                     }
 
-                    // Prepare an array to hold the parameter values for the constructor
-                    var constructorParams = constructorInfo.GetParameters();
-                    var constructorParamValues = new object[constructorParams.Length];
+                    command.AddOption(option);
+                }
 
-                    // Fill the array with instances obtained from the service container
-                    for (int i = 0; i < constructorParams.Length; i++) {
-                        var paramType = constructorParams[i].ParameterType;
+                var handlerMethod = type.GetMethod(commandAttribute.HandlerMethodName, BindingFlags.Public | BindingFlags.Instance);
+                if (handlerMethod != null) {
+                    AttachDynamicHandler(type, command, commandInstance, handlerMethod);
+                }
 
-                        if (paramType == typeof(IServiceProvider)) {
-                            constructorParamValues[i] = _serviceProvider;
-                            continue;
-                        }
+                var configureMethod = type.GetMethod("Configure", BindingFlags.Public | BindingFlags.Instance);
+                if (configureMethod != null) {
+                    var configureParamValues = configureMethod.GetParameters().Select(p =>
+                        p.ParameterType == typeof(Command) ? command : _serviceProvider.GetService(p.ParameterType) ?? throw new InvalidOperationException($"Service for type {p.ParameterType.FullName} not found")
+                    ).ToArray();
 
-                        var serviceInstance = _serviceProvider.GetService(paramType);
-                        constructorParamValues[i] = serviceInstance ?? throw new InvalidOperationException($"Service for type {paramType.FullName} not found");
-                    }
-
-                    // Create an instance of the command using the constructor with parameters
-                    var commandInstance = constructorInfo.Invoke(constructorParamValues);
-
-                    if (commandInstance is not null) {
-                        command.IsHidden = commandAttribute.IsHidden;
-
-                        {
-                            var aliases = commandAttribute.Aliases;
-
-                            if (aliases != null) {
-                                foreach (var alias in aliases) {
-                                    command.AddAlias(alias);
-                                }
-                            }
-                        }
-
-                        var argumentAttributes = type.GetCustomAttributes<ArgumentAttribute>();
-
-                        if (argumentAttributes is not null) {
-                            foreach (var attr in argumentAttributes) {
-                                var argumentType = typeof(Argument<>).MakeGenericType(attr.Type);
-                                var constructor = argumentType.GetConstructor(new[] { typeof(string), typeof(string) });
-
-                                if (constructor != null) {
-                                    var argument = (Argument)constructor.Invoke(new object?[] { attr.Name, attr.Description });
-
-                                    System.CommandLine.ArgumentArity arity = attr.Arity switch {
-                                        ArgumentArity.Zero => System.CommandLine.ArgumentArity.Zero,
-                                        ArgumentArity.ZeroOrOne => System.CommandLine.ArgumentArity.ZeroOrOne,
-                                        ArgumentArity.ExactlyOne => System.CommandLine.ArgumentArity.ExactlyOne,
-                                        ArgumentArity.ZeroOrMore => System.CommandLine.ArgumentArity.ZeroOrMore,
-                                        ArgumentArity.OneOrMore => System.CommandLine.ArgumentArity.OneOrMore,
-                                        _ => System.CommandLine.ArgumentArity.ZeroOrOne
-                                    };
-
-                                    argument.Arity = arity;
-                                    argument.IsHidden = attr.IsHidden;
-
-                                    var defaultValueMethod = type.GetMethod(attr.DefaultValueMethodName, BindingFlags.NonPublic | BindingFlags.Instance);
-
-                                    if (defaultValueMethod != null) {
-                                        argument.SetDefaultValueFactory(() => {
-                                            var handlerParams = defaultValueMethod.GetParameters();
-                                            var parameterValues = new object[handlerParams.Length];
-
-                                            for (int i = 0; i < handlerParams.Length; i++) {
-                                                var param = handlerParams[i];
-                                                object? value = null;
-                                                value = _serviceProvider.GetService(param.ParameterType);
-
-                                                // Assign the resolved value to the parameterValues array
-                                                if (value != null) {
-                                                    parameterValues[i] = value;
-                                                }
-                                            }
-
-                                            return defaultValueMethod.Invoke(commandInstance, parameterValues);
-                                        });
-                                    }
-
-                                    command.AddArgument(argument);
-                                }
-                            }
-                        }
-
-                        var optionAttributes = type.GetCustomAttributes<OptionAttribute>();
-
-                        if (optionAttributes is not null) {
-                            foreach (var attr in optionAttributes) {
-                                var optionType = typeof(Option<>).MakeGenericType(attr.Type);
-                                var constructor = optionType.GetConstructor(new[] { typeof(string), typeof(string) });
-
-                                if (constructor != null) {
-                                    var option = (Option)constructor.Invoke(new object?[] { attr.Name, attr.Description });
-                                    var aliases = attr.Aliases;
-
-                                    if (aliases != null) {
-                                        foreach (var alias in aliases) {
-                                            option.AddAlias(alias);
-                                        }
-                                    }
-
-                                    System.CommandLine.ArgumentArity arity = attr.Arity switch {
-                                        ArgumentArity.Zero => System.CommandLine.ArgumentArity.Zero,
-                                        ArgumentArity.ZeroOrOne => System.CommandLine.ArgumentArity.ZeroOrOne,
-                                        ArgumentArity.ExactlyOne => System.CommandLine.ArgumentArity.ExactlyOne,
-                                        ArgumentArity.ZeroOrMore => System.CommandLine.ArgumentArity.ZeroOrMore,
-                                        ArgumentArity.OneOrMore => System.CommandLine.ArgumentArity.OneOrMore,
-                                        _ => System.CommandLine.ArgumentArity.ZeroOrOne
-                                    };
-
-                                    option.Arity = arity;
-                                    option.IsHidden = attr.IsHidden;
-                                    option.IsRequired = attr.IsRequired;
-                                    option.AllowMultipleArgumentsPerToken = attr.AllowMultipleArgumentsPerToken;
-
-                                    if (attr.FromAmong.Length > 0) {
-                                        option.FromAmong(attr.FromAmong);
-                                    }
-
-                                    var defaultValueMethod = type.GetMethod(attr.DefaultValueMethodName, BindingFlags.NonPublic | BindingFlags.Instance);
-
-                                    if (defaultValueMethod != null) {
-                                        option.SetDefaultValueFactory(() => {
-                                            var handlerParams = defaultValueMethod.GetParameters();
-                                            var parameterValues = new object[handlerParams.Length];
-
-                                            for (int i = 0; i < handlerParams.Length; i++) {
-                                                var param = handlerParams[i];
-                                                object? value = null;
-                                                value = _serviceProvider.GetService(param.ParameterType);
-
-                                                // Assign the resolved value to the parameterValues array
-                                                if (value != null) {
-                                                    parameterValues[i] = value;
-                                                }
-                                            }
-
-                                            return defaultValueMethod.Invoke(commandInstance, parameterValues);
-                                        });
-                                    }
-
-                                    command.AddOption(option);
-                                }
-                            }
-                        }
-
-                        var handlerMethod = type.GetMethod(commandAttribute.HandlerMethodName, BindingFlags.Public | BindingFlags.Instance);
-
-                        if (handlerMethod != null) {
-                            AttachDynamicHandler(type, command, commandInstance!, handlerMethod);
-                            _commands.Add(command.Name, commandInstance!);
-                        }
-
-                        var configureMethod = type.GetMethod("Configure", BindingFlags.Public | BindingFlags.Instance);
-
-                        if (configureMethod != null) {
-                            var configureMethodParams = configureMethod.GetParameters();
-                            var configureParamValues = new object[configureMethodParams.Length];
-
-                            for (int i = 0; i < configureParamValues.Length; i++) {
-                                var paramType = configureMethodParams[i].ParameterType;
-
-                                if (paramType == typeof(Command)) {
-                                    configureParamValues[i] = command;
-                                    continue;
-                                }
-
-                                var serviceInstance = _serviceProvider.GetService(paramType);
-                                configureParamValues[i] = serviceInstance ?? throw new InvalidOperationException($"Service for type {paramType.FullName} not found");
-                            }
-
-                            configureMethod.Invoke(commandInstance, configureParamValues);
-                        }
-                    }
+                    configureMethod.Invoke(commandInstance, configureParamValues);
                 }
             }
         }
 
-        // Configure parent-child relationships
         foreach (var relation in commandRelations) {
-            if (commands.TryGetValue(relation.Child, out var childCommand) && commands.TryGetValue(relation.Parent, out var parentCommand)) {
-                parentCommand.AddCommand(childCommand);
+            if (commandMap.TryGetValue(relation.ChildType, out var child)) {
+                var parent = allCommands.FirstOrDefault(t => t.Command.Name == relation.ParentName).Command;
+                parent?.AddCommand(child);
             }
         }
 
-        // Add top-level commands to _rootCommand or another appropriate place
-        foreach (var command in commands.Values) {
-            if (!commandRelations.Any(relation => relation.Child == command.Name)) {
+        var children = new HashSet<Type>(commandRelations.Select(r => r.ChildType));
+        foreach (var (type, command) in allCommands) {
+            if (!children.Contains(type)) {
                 _rootCommand.AddCommand(command);
             }
         }
@@ -630,7 +543,11 @@ public class ClifferBuilder : IClifferBuilder {
 
         var parser = commandLineBuilder.Build(); 
 
-        _cli = new ClifferCli(_serviceProvider, _services, _rootCommand, parser, _commands);
+        if (_rootCommandInstance is null) {
+            throw new Exception("Root command instance is null");
+        }
+
+        _cli = new ClifferCli(_serviceProvider, _services, _rootCommand, _rootCommandInstance, parser);
         return _cli;
     }
 
@@ -717,14 +634,8 @@ public class ClifferBuilder : IClifferBuilder {
                 }
             }
             else {
-                var commandParamAttribute = param.GetCustomAttribute<CommandParamAttribute>();
-                if (commandParamAttribute != null) {
-                    value = _commands.FirstOrDefault(kvp => kvp.Key == commandParamAttribute.Name).Value;
-                }
-                else {
-                    // If the child is none of the above, then get an instance of the type from the service container (dependency injection)
-                    value = _serviceProvider.GetService(param.ParameterType);
-                }
+                // If the child is none of the above, then get an instance of the type from the service container (dependency injection)
+                value = _serviceProvider.GetService(param.ParameterType);
             }
 
             // Assign the resolved value to the parameterValues array

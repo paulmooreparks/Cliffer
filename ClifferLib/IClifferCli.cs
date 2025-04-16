@@ -2,6 +2,6 @@
 
 public interface IClifferCli {
     IServiceProvider ServiceProvider { get; }
-    IDictionary<string, Object> Commands { get; }
+    object RootCommandInstance { get; }
     Task<int> RunAsync(string[] args);
 }
