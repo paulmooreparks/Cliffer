@@ -4,6 +4,7 @@ using System.CommandLine.Invocation;
 namespace Cliffer;
 
 public interface IReplContext {
+    Command GetRootCommand();
     string GetTitleMessage();
     string GetEntryMessage();
     void OnEntry();
