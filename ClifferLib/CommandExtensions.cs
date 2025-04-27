@@ -42,12 +42,20 @@ public static class CommandExtensions {
 
                 input = input.Trim();
 
-                if (replContext.GetPopCommands().Contains(input, StringComparer.OrdinalIgnoreCase)) {
+                if (replContext.GetExitCommands().Contains(input, StringComparer.OrdinalIgnoreCase)) {
+                    ClifferEventHandler.Exit(Result.Success);
+                }
+
+                if (string.Equals(replContext.GetRootNavCommand(), input)) {
                     return Result.Success;
                 }
 
-                if (replContext.GetExitCommands().Contains(input, StringComparer.OrdinalIgnoreCase)) {
-                    ClifferEventHandler.Exit(Result.Success);
+                if (string.Equals(replContext.GetParentNavCommand(), input)) {
+                    return Result.Success;
+                }
+
+                if (replContext.GetPopCommands().Contains(input, StringComparer.OrdinalIgnoreCase)) {
+                    return Result.Success;
                 }
 
                 var args = replContext.SplitCommandLine(input);
@@ -60,7 +68,7 @@ public static class CommandExtensions {
                     args = replContext.PreprocessArgs(args, command, context);
                 }
 
-                await replContext.RunAsync(command, args);
+                _ = await replContext.RunAsync(command, args);
             }
             catch (Exception ex) {
                 Console.Error.WriteLine(ex.Message);

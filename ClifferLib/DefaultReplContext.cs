@@ -10,36 +10,18 @@ using System.Threading.Tasks;
 
 namespace Cliffer;
 
-public class DefaultReplContext : IReplContext {
-    public DefaultReplContext() { }
-
-    public DefaultReplContext(IReplContext parentContext, Command parentCommand) {
-        ParentContext = parentContext;
-        ParentCommand = parentCommand;
-    }
-
-    public virtual IReplContext? ParentContext { get; set; }
-    public virtual Command? ParentCommand { get; set; }
-
-    public virtual Command GetRootCommand() {
-        IReplContext? ctx = this;
-
-        while (ctx is DefaultReplContext dc && dc.ParentContext is not null) {
-            ctx = dc.ParentContext;
-        }
-
-        return (ctx as DefaultReplContext)?.ParentCommand ?? throw new InvalidOperationException("No root command found.");
-    }
-
+public class DefaultReplContext() : IReplContext 
+{
     public virtual string GetTitleMessage() => string.Empty;
 
     public virtual string GetEntryMessage() {
         var titleMessage = GetTitleMessage();
         var exitCommands = string.Join(", ", GetExitCommands());
-        var popCommands = string.Join(", ", GetPopCommands());
+        var rootNavCommand = GetRootNavCommand();
+        var parentNavCommand = GetParentNavCommand();
         var helpCommands = string.Join(", ", GetHelpCommands());
 
-        var maxWidth = Math.Max(exitCommands.Length, Math.Max(popCommands.Length, helpCommands.Length));
+        var maxWidth = Math.Max(exitCommands.Length, Math.Max(helpCommands.Length, Math.Max(rootNavCommand?.Length ?? 0, parentNavCommand?.Length ?? 0)));
 
         StringBuilder sb = new StringBuilder();
         
@@ -51,8 +33,12 @@ public class DefaultReplContext : IReplContext {
             sb.AppendLine($@"{exitCommands.PadRight(maxWidth)}  Exit the application");
         }
 
-        if (popCommands is not null && popCommands.Any()) {
-            sb.AppendLine($@"{popCommands.PadRight(maxWidth)}  Pop up one level in the command hierarchy");
+        if (!string.IsNullOrEmpty(rootNavCommand)) {
+            sb.AppendLine($@"{rootNavCommand.PadRight(maxWidth)}  Exit to the root level in the command hierarchy");
+        }
+
+        if (!string.IsNullOrEmpty(parentNavCommand)) {
+            sb.AppendLine($@"{parentNavCommand.PadRight(maxWidth)}  Exit to the parent level in the command hierarchy");
         }
 
         if (helpCommands is not null && helpCommands.Any()) {
@@ -86,6 +72,10 @@ public class DefaultReplContext : IReplContext {
 
     public virtual string[] GetPopCommands() => [];
 
+    public virtual string? GetRootNavCommand() => "/";
+
+    public virtual string? GetParentNavCommand() => "..";
+
     public virtual string[] GetHelpCommands() => ["help", "?", "-?", "--?", "--help"];
 
     public virtual string GetPrompt(Command command, InvocationContext context) => $"{command.Name}> ";
@@ -97,63 +87,8 @@ public class DefaultReplContext : IReplContext {
     public virtual string[] PreprocessArgs(string[] args, Command command, InvocationContext context) => args;
 
     public virtual async Task<int> RunAsync(Command currentCommand, string[] args) {
-        if (args.Length == 0)
+        if (args.Length == 0) {
             return Result.Success;
-
-        string firstArg = args[0];
-
-        // Navigate to root command
-        if (firstArg == "/") {
-            var rootCommand = GetRootCommand();
-            return await rootCommand.RunAsync(args.Skip(1).ToArray());
-        }
-
-        // Navigate to parent command
-        if (firstArg == "..") {
-            if (ParentCommand is not null)
-                return await ParentCommand.RunAsync(args.Skip(1).ToArray());
-
-            Console.Error.WriteLine("No parent context available.");
-            return Result.ErrorInvalidArgument;
-        }
-
-        // `/command` or `/a/b/c`
-        // TODO: need path normalisation
-        if (firstArg.StartsWith('/')) {
-            var root = GetRootCommand();
-            Command? resolved = root;
-
-            foreach (var part in firstArg.Trim('/').Split('/')) {
-                resolved = resolved?.Children.OfType<Command>().FirstOrDefault(c => c.Name == part);
-                if (resolved is null) {
-                    Console.Error.WriteLine($"Invalid command path: {firstArg}");
-                    return Result.ErrorInvalidArgument;
-                }
-            }
-
-            return await resolved.RunAsync(args.Skip(1).ToArray());
-        }
-
-        // ..command or ../command
-        if (firstArg.StartsWith("..")) {
-            if (ParentCommand is not null) {
-                string childName = firstArg.StartsWith("../")
-                    ? firstArg[3..]
-                    : firstArg[2..];
-
-                var child = ParentCommand.Children
-                    .OfType<Command>()
-                    .FirstOrDefault(c => c.Name == childName);
-
-                if (child is not null)
-                    return await child.RunAsync(args.Skip(1).ToArray());
-
-                Console.Error.WriteLine($"No such command '{childName}' in parent context.");
-                return Result.ErrorInvalidArgument;
-            }
-
-            Console.Error.WriteLine("No parent context available.");
-            return Result.ErrorInvalidArgument;
         }
 
         // Otherwise, use the current context normally

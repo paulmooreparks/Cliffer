@@ -4,7 +4,6 @@ using System.CommandLine.Invocation;
 namespace Cliffer;
 
 public interface IReplContext {
-    Command GetRootCommand();
     string GetTitleMessage();
     string GetEntryMessage();
     void OnEntry();
@@ -13,6 +12,8 @@ public interface IReplContext {
     string GetPrompt(System.CommandLine.Command command, InvocationContext context);
     string[] GetExitCommands();
     string[] GetPopCommands();
+    string? GetRootNavCommand();
+    string? GetParentNavCommand();
     string[] GetHelpCommands();
     string[] SplitCommandLine(string input);
     string[] PreprocessArgs(string[] args, Command command, InvocationContext context);
