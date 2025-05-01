@@ -87,11 +87,30 @@ public class DefaultReplContext() : IReplContext
     public virtual string[] PreprocessArgs(string[] args, Command command, InvocationContext context) => args;
 
     public virtual async Task<int> RunAsync(Command currentCommand, string[] args) {
-        if (args.Length == 0) {
+        if (args.Length == 0)
+            return Result.Success;
+
+        var config = new CommandLineConfiguration(
+            currentCommand,
+            helpBuilderFactory: _ => new ReplAwareHelpBuilder(this)
+        );
+
+        var parser = new Parser(config);
+        var result = parser.Parse(args);
+
+        if (args.Contains("--help") || args.Contains("-h") || args.Contains("-?") || args.Contains("help")) {
+            var commandToHelp = result.CommandResult.Command;
+
+            var helpContext = new HelpContext(
+                new ReplAwareHelpBuilder(this),
+                commandToHelp,
+                Console.Out
+            );
+
+            helpContext.HelpBuilder.Write(helpContext);
             return Result.Success;
         }
 
-        // Otherwise, use the current context normally
-        return await currentCommand.RunAsync(args);
+        return await parser.InvokeAsync(args);
     }
 }

@@ -17,7 +17,7 @@ public static class CommandExtensions {
         if (macros.Any()) {
             return await Macro.PreprocessMacros(command, args, macros);
         }
-        
+
         ClifferEventHandler.PreprocessArgs(args);
         return await command.InvokeAsync(args);
     }
