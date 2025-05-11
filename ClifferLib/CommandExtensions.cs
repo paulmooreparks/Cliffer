@@ -22,17 +22,17 @@ public static class CommandExtensions {
         return await command.InvokeAsync(args);
     }
 
-    public static async Task<int> Repl(this Command command, IServiceProvider serviceProvider, InvocationContext context, IReplContext? replContext = null) {
-        if (replContext is null) {
-            replContext = new DefaultReplContext();
-        }
+    public static async Task<int> Repl(this Command command, IServiceProvider serviceProvider, InvocationContext invContext, IReplContext? replContext = null) {
+        ArgumentNullException.ThrowIfNull(serviceProvider);
+        ArgumentNullException.ThrowIfNull(invContext);
 
+        replContext ??= new DefaultReplContext(command);
         replContext.OnEntry();
 
         while (true) {
             try {
                 replContext.OnLoop();
-                Console.Write($"{replContext.GetPrompt(command, context)}");
+                Console.Write($"{replContext.GetPrompt(command, invContext)}");
 
                 string? input = Console.ReadLine();
 
@@ -42,33 +42,103 @@ public static class CommandExtensions {
 
                 input = input.Trim();
 
-                if (replContext.GetExitCommands().Contains(input, StringComparer.OrdinalIgnoreCase)) {
+                if (replContext.ExitCommands.Contains(input, StringComparer.OrdinalIgnoreCase)) {
                     ClifferEventHandler.Exit(Result.Success);
                 }
 
-                if (string.Equals(replContext.GetRootNavCommand(), input)) {
+                var rootPrefix = replContext.RootNavCommand ?? "/";
+                var parentPrefix = replContext.ParentNavCommand ?? "..";
+
+                if (string.Equals(rootPrefix, input) ||
+                    string.Equals(parentPrefix, input) ||
+                    replContext.PopCommands.Contains(input, StringComparer.OrdinalIgnoreCase)) {
                     return Result.Success;
                 }
 
-                if (string.Equals(replContext.GetParentNavCommand(), input)) {
-                    return Result.Success;
+                var inputArgs = replContext.SplitCommandLine(input);
+                if (inputArgs.Length == 0) {
+                    continue;
                 }
 
-                if (replContext.GetPopCommands().Contains(input, StringComparer.OrdinalIgnoreCase)) {
-                    return Result.Success;
+                // Absolute path (/foo/bar)
+                // TODO: See comments below on ".." handler.
+                if (inputArgs[0].StartsWith(rootPrefix)) {
+                    var trimmed = inputArgs[0].Substring(rootPrefix.Length);
+                    var args = new[] { trimmed }.Concat(inputArgs.Skip(1)).ToArray();
+                    var parseResult = replContext.RootCommand.Parse(args);
+                    if (!parseResult.Errors.Any()) {
+                        await parseResult.InvokeAsync();
+                    }
+                    else {
+                        foreach (var error in parseResult.Errors) {
+                            Console.Error.WriteLine(error.Message);
+                        }
+                    }
+                    continue;
                 }
 
-                var args = replContext.SplitCommandLine(input);
+                // Relative path (..command, ../foo, ../../bar/baz)
+                // TODO: Not sure I'll keep this around, unless I go to deeply-nested folders. 
+                // Right now, it behaves mostly like '/' above.
+                if (inputArgs[0].StartsWith(parentPrefix)) {
+                    var baseArg = inputArgs[0];
+                    var remainingArgs = inputArgs.Skip(1).ToArray();
+                    var commandParts = new List<string>();
+                    var levelUps = 0;
 
-                if (args.Length > 0) {
-                    if (replContext.GetHelpCommands().Contains(args[0], StringComparer.OrdinalIgnoreCase)) {
-                        args[0] = "--help";
+                    if (baseArg.StartsWith(parentPrefix + "/")) {
+                        var parts = baseArg.Split('/');
+                        levelUps = parts.TakeWhile(p => p == parentPrefix).Count();
+                        commandParts.AddRange(parts.Skip(levelUps));
+                    }
+                    else if (baseArg.StartsWith(parentPrefix) && baseArg.Length > parentPrefix.Length) {
+                        levelUps = 1;
+                        commandParts.Add(baseArg.Substring(parentPrefix.Length));
+                    }
+                    else if (baseArg == parentPrefix) {
+                        return Result.Success;
                     }
 
-                    args = replContext.PreprocessArgs(args, command, context);
+                    var target = replContext.CurrentCommand;
+                    for (int i = 0; i < levelUps; i++) {
+                        target = target.Parents.FirstOrDefault() as Command ?? target;
+                    }
+
+                    var args = commandParts.Concat(remainingArgs).ToArray();
+                    var parseResult = target.Parse(args);
+                    if (!parseResult.Errors.Any()) {
+                        await parseResult.InvokeAsync();
+                    }
+                    else {
+                        foreach (var error in parseResult.Errors) {
+                            Console.Error.WriteLine(error.Message);
+                        }
+                    }
+                    continue;
                 }
 
-                _ = await replContext.RunAsync(command, args);
+                // Try running from root if not found in current scope
+                if (replContext.HelpCommands.Contains(inputArgs[0], StringComparer.OrdinalIgnoreCase)) {
+                    inputArgs[0] = "--help";
+                }
+
+                var preprocessedArgs = replContext.PreprocessArgs(inputArgs, command, invContext);
+                var parseCurrent = command.Parse(preprocessedArgs);
+
+                if (!parseCurrent.Errors.Any()) {
+                    _ = await replContext.RunAsync(command, preprocessedArgs);
+                }
+                else {
+                    var parseRoot = replContext.RootCommand.Parse(preprocessedArgs);
+                    if (!parseRoot.Errors.Any()) {
+                        _ = await parseRoot.InvokeAsync();
+                    }
+                    else {
+                        foreach (var error in parseRoot.Errors) {
+                            Console.Error.WriteLine(error.Message);
+                        }
+                    }
+                }
             }
             catch (Exception ex) {
                 Console.Error.WriteLine(ex.Message);

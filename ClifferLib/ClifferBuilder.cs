@@ -362,6 +362,11 @@ public class ClifferBuilder : IClifferBuilder {
                 var constructorParamValues = new object[constructorParams.Length];
                 for (int i = 0; i < constructorParams.Length; i++) {
                     var paramType = constructorParams[i].ParameterType;
+
+                    if (paramType == typeof(Command)) {
+                        constructorParamValues[i] = command;
+                        continue;
+                    }
                     constructorParamValues[i] = paramType == typeof(IServiceProvider)
                         ? _serviceProvider
                         : _serviceProvider.GetService(paramType) ?? throw new InvalidOperationException($"Service for type {paramType.FullName} not found");

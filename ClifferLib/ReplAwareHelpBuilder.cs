@@ -20,10 +20,10 @@ public class ReplAwareHelpBuilder : HelpBuilder {
         if (_replContext is null)
             return;
 
-        var exitCommands = _replContext.GetExitCommands();
-        var popCommands = _replContext.GetPopCommands();
-        var rootCommand = _replContext.GetRootNavCommand();
-        var parentCommand = _replContext.GetParentNavCommand();
+        var exitCommands = _replContext.ExitCommands;
+        var popCommands = _replContext.PopCommands;
+        var rootCommand = _replContext.RootNavCommand;
+        var parentCommand = _replContext.ParentNavCommand;
 
         bool isAtRoot = string.IsNullOrWhiteSpace(parentCommand) && (popCommands.Length == 0);
 
