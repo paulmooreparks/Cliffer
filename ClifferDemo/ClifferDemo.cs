@@ -31,10 +31,10 @@ internal class ClifferDemo {
     }
 }
 
-internal class ReplContext : DefaultReplContext {
-    public override string GetEntryMessage() => "Entering interactive mode...";
+internal class ReplContext(Command currentCommand) : DefaultReplContext(currentCommand) {
+    public override string EntryMessage => "Entering interactive mode...";
 
-    public override string GetLoopMessage() => "Do it again!";
+    public override string LoopMessage => "Do it again!";
 }
 
 [RootCommand("Cliffer demo")]
